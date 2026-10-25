@@ -11,8 +11,8 @@ from streamlit_geolocation import streamlit_geolocation
 st.set_page_config(page_title="Aerosigma - Helipontos", page_icon="🚁", layout="centered")
 
 st.title("🚁 AEROSIGMA Web")
-st.subheader("Gerador Profissional de Heliponto (Ajuste Fino de Espaçamento)")
-st.write("Planta técnica com a biruta no canto inferior esquerdo e peso reposicionado sem sobreposições.")
+st.subheader("Gerador Profissional de Heliponto (Versão Final Consolidada)")
+st.write("Planta técnica com a biruta no canto inferior esquerdo e peso devidamente posicionado.")
 
 class AerosigmaEngine:
     def __init__(self, lat, lon, alt_m, nome_projeto="Heliponto Aerosigma", peso_kg=5000):
@@ -297,18 +297,18 @@ class AerosigmaEngine:
         # Letra H central perfeitamente limpa e visível
         ax.text(0, 0, 'H', color='white', fontsize=32, fontweight='bold', ha='center', va='center')
 
-        # Indicação de Peso Máximo (5.0t) com fonte menor e posicionada mais abaixo na diagonal esquerda
+        # Indicação de Peso Máximo (5.0t) com fonte menor e posicionada na diagonal inferior esquerda
         ax.text(-5.0, -3.5, f"{self.peso_kg/1000:.1f}t", color='white', fontsize=6.0, fontweight='bold', ha='center', va='center', bbox=dict(boxstyle="square,pad=0.15", facecolor="#2B6CB0", edgecolor="white"))
 
         # Cota de tamanho "20 m" na borda superior direita
         ax.text(tamanho_tlof_m/2 - 4.5, tamanho_tlof_m/2 - 2.0, f"{int(tamanho_tlof_m)} m", color='white', fontsize=9, fontweight='bold', ha='center', va='center', bbox=dict(boxstyle="square,pad=0.2", facecolor="#1A365D", edgecolor="white"))
 
-        # Duas setas lado a lado no canto superior esquerdo da TLOF
+        # Duas setas no canto superior esquerdo
         ax.annotate('', xy=(-3.0, 5.0), xytext=(-3.0, 8.0), arrowprops=dict(arrowstyle="->", color="white", lw=2.5))
         ax.annotate('', xy=(-6.5, 5.0), xytext=(-6.5, 2.0), arrowprops=dict(arrowstyle="->", color="white", lw=2.5))
 
-        # Biruta posicionada exatamente no canto inferior esquerdo (conforme o X marcado)
-        biruta_x, biruta_y = -7.5, -7.5
+        # Biruta posicionada exatamente no CANTO INFERIOR ESQUERDO da TLOF
+        biruta_x, biruta_y = -tamanho_tlof_m/2 + 2.5, -tamanho_tlof_m/2 + 2.5
         ax.plot([biruta_x, biruta_x], [biruta_y, biruta_y + 3.0], color='black', linewidth=1.5)
         biruta_cone = patches.Polygon([[biruta_x, biruta_y + 3.0], [biruta_x + 3.0, biruta_y + 2.2], [biruta_x + 3.0, biruta_y + 0.8]], color='#DD6B20')
         ax.add_patch(biruta_cone)
