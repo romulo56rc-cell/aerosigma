@@ -11,8 +11,8 @@ from streamlit_geolocation import streamlit_geolocation
 st.set_page_config(page_title="Aerosigma - Helipontos", page_icon="🚁", layout="centered")
 
 st.title("🚁 AEROSIGMA Web")
-st.subheader("Gerador Profissional de Helipontos (Padrão Completo Regulado)")
-st.write("Planta técnica com flechas de aproximação direcionadas ao H, cotas, peso e biruta.")
+st.subheader("Gerador Profissional de Helipontos (Padrão Final Detalhado)")
+st.write("Planta técnica ajustada com cotas, biruta e peso dentro da TLOF.")
 
 class AerosigmaEngine:
     def __init__(self, lat, lon, alt_m, nome_projeto="Heliponto Aerosigma", peso_kg=5000):
@@ -296,17 +296,23 @@ class AerosigmaEngine:
 
         ax.text(0, 0, 'H', color='white', fontsize=32, fontweight='bold', ha='center', va='center')
 
-        # Cotas de tamanho nas margens
-        ax.text(0, tamanho_tlof_m/2 + 2.5, f"{tamanho_tlof_m} m", color='white', fontsize=11, fontweight='bold', ha='center', va='center', bbox=dict(boxstyle="round,pad=0.3", facecolor="#1A365D", edgecolor="white"))
-        ax.text(tamanho_tlof_m/2 + 3.5, 0, f"{tamanho_tlof_m} m", color='white', fontsize=11, fontweight='bold', ha='center', va='center', rotation=90, bbox=dict(boxstyle="round,pad=0.3", facecolor="#1A365D", edgecolor="white"))
+        # Cota de tamanho escrita DENTRO do quadrado (topo e lateral)
+        ax.text(0, tamanho_tlof_m/2 - 2.0, f"{tamanho_tlof_m} m", color='white', fontsize=10, fontweight='bold', ha='center', va='center', bbox=dict(boxstyle="round,pad=0.2", facecolor="#2B6CB0", edgecolor="white"))
+        ax.text(tamanho_tlof_m/2 - 2.5, 0, f"{tamanho_tlof_m} m", color='white', fontsize=10, fontweight='bold', ha='center', va='center', rotation=90, bbox=dict(boxstyle="round,pad=0.2", facecolor="#2B6CB0", edgecolor="white"))
 
-        # Flechas de aproximação DENTRO do quadrado, apontando para o centro (sentido H) e saindo
-        offset_f = tamanho_tlof_m / 4.0
-        ax.annotate('', xy=(0, offset_f), xytext=(0, offset_f + 3.0), arrowprops=dict(arrowstyle="->", color="white", lw=2.5))
-        ax.annotate('', xy=(0, -offset_f), xytext=(0, -offset_f - 3.0), arrowprops=dict(arrowstyle="->", color="white", lw=2.5))
+        # Flechas de aproximação uma ao lado da outra DENTRO do quadrado, apontando para o centro (sentido H)
+        ax.annotate('', xy=(-2.0, -tamanho_tlof_m/4.0), xytext=(-2.0, -tamanho_tlof_m/4.0 - 2.5), arrowprops=dict(arrowstyle="->", color="white", lw=2))
+        ax.annotate('', xy=(2.0, tamanho_tlof_m/4.0), xytext=(2.0, tamanho_tlof_m/4.0 + 2.5), arrowprops=dict(arrowstyle="->", color="white", lw=2))
 
-        # Indicador de Peso Máximo (MTOW) desenhado no canto superior esquerdo da TLOF
-        ax.text(-tamanho_tlof_m/2 + 2.0, tamanho_tlof_m/2 - 2.0, f"{self.peso_kg/1000:.1f}t", color='white', fontsize=9, fontweight='bold', ha='center', va='center', bbox=dict(boxstyle="square,pad=0.2", facecolor="#2B6CB0", edgecolor="white"))
+        # Peso Máximo (MTOW) perto da letra H (acima do centro)
+        ax.text(0, tamanho_tlof_m * 0.18, f"{self.peso_kg/1000:.1f}t", color='white', fontsize=10, fontweight='bold', ha='center', va='center', bbox=dict(boxstyle="square,pad=0.3", facecolor="#2B6CB0", edgecolor="white"))
+
+        # Biruta desenhada DENTRO do quadrado (canto superior esquerdo)
+        biruta_x, biruta_y = -tamanho_tlof_m/2 + 3.0, tamanho_tlof_m/2 - 3.0
+        ax.plot([biruta_x, biruta_x], [biruta_y, biruta_y + 4], color='black', linewidth=1.5)
+        biruta_cone = patches.Polygon([[biruta_x, biruta_y + 4], [biruta_x + 4, biruta_y + 3], [biruta_x + 4, biruta_y + 1]], color='#DD6B20')
+        ax.add_patch(biruta_cone)
+        ax.text(biruta_x + 2, biruta_y + 5.5, 'BIRUTA', fontsize=6, fontweight='bold', color='white', ha='center')
 
         tri_dist = tamanho_tlof_m / 2.0 * 0.75
         tri_x = tri_dist * math.cos(rad_rumo)
@@ -314,20 +320,6 @@ class AerosigmaEngine:
         triangle = patches.RegularPolygon((tri_x, tri_y), numVertices=3, radius=3.0, 
                                           orientation=rad_rumo - math.pi/2, color='#ECC94B')
         ax.add_patch(triangle)
-
-        biruta_x, biruta_y = -40, 40
-        ax.plot([biruta_x, biruta_x], [biruta_y, biruta_y + 8], color='black', linewidth=2)
-        biruta_cone = patches.Polygon([[biruta_x, biruta_y + 8], [biruta_x + 8, biruta_y + 6], [biruta_x + 8, biruta_y + 4]], color='#DD6B20', label='Biruta')
-        ax.add_patch(biruta_cone)
-        ax.text(biruta_x + 4, biruta_y + 10, 'BIRUTA', fontsize=8, fontweight='bold', color='#1A365D', ha='center')
-
-        ax.annotate('NV', xy=(-20, 50), xytext=(-20, 35),
-                    arrowprops=dict(facecolor='blue', edgecolor='blue', shrink=0.05, width=2, headwidth=8),
-                    fontsize=10, fontweight='bold', color='blue', ha='center')
-
-        ax.annotate(f'NM ({decl}°)', xy=(20, 50), xytext=(20, 35),
-                    arrowprops=dict(facecolor='red', edgecolor='red', shrink=0.05, width=2, headwidth=8),
-                    fontsize=10, fontweight='bold', color='red', ha='center')
 
         rx = 52 * math.cos(rad_rumo)
         ry = 52 * math.sin(rad_rumo)
