@@ -11,8 +11,8 @@ from streamlit_geolocation import streamlit_geolocation
 st.set_page_config(page_title="Aerosigma - Helipontos", page_icon="🚁", layout="centered")
 
 st.title("🚁 AEROSIGMA Web")
-st.subheader("Gerador Profissional de Heliponto (Padrão Tracejado Exato da Foto)")
-st.write("Planta técnica com triângulo e letra H tracejados e centralizados conforme a referência visual.")
+st.subheader("Gerador Profissional de Heliponto (H e Triângulo Alinhados ao Rumo Magnético)")
+st.write("Planta técnica com triângulo e letra H tracejados, centralizados e orientados ao rumo magnético.")
 
 class AerosigmaEngine:
     def __init__(self, lat, lon, alt_m, nome_projeto="Heliponto Aerosigma", peso_kg=5000):
@@ -209,29 +209,51 @@ class AerosigmaEngine:
                                  label=f'TLOF Principal ({tamanho_tlof_m}m)')
         ax.add_patch(tlof)
 
-        # Desenho do Triângulo Tracejado Orientador (igual à foto)
+        # Função de rotação baseada no rumo magnético
+        def rot(x, y, ang_deg):
+            rad = math.radians(ang_deg)
+            c, s = math.cos(rad), math.sin(rad)
+            return x * c - y * s, x * s + y * c
+
+        # Desenho do Triângulo Tracejado Orientador orientado ao rumo magnético
         r_tri = 5.0
-        rad_mag = math.radians(90 - rumo_mag)
-        pts_tri = []
+        pts_tri_base = []
         for j in range(3):
-            ang = rad_mag + j * (2 * math.pi / 3)
-            pts_tri.append((r_tri * math.cos(ang), r_tri * math.sin(ang)))
-        pts_tri.append(pts_tri[0])
+            ang = j * (2 * math.pi / 3) + math.pi/2
+            pts_tri_base.append((r_tri * math.cos(ang), r_tri * math.sin(ang)))
+        pts_tri_base.append(pts_tri_base[0])
+
+        pts_tri = []
+        for px, py in pts_tri_base:
+            rx, ry = rot(px, py, rumo_mag)
+            pts_tri.append((rx, ry))
 
         for j in range(3):
             ax.plot([pts_tri[j][0], pts_tri[j+1][0]], [pts_tri[j][1], pts_tri[j+1][1]], 
                     color='white', linewidth=2.0, linestyle=(0, (5, 5)))
 
-        # Desenho da Letra H em traços tracejados (estilo exato da foto)
+        # Desenho da Letra H em traços tracejados orientada ao rumo magnético
         hw, hh = 1.8, 3.0
-        # Perna esquerda tracejada
-        for y_pos in np.linspace(-hh/2, hh/2, 5):
-            ax.plot([-hw/2, -hw/2], [y_pos, y_pos + 0.4], color='white', linewidth=2.0)
-        # Perna direita tracejada
-        for y_pos in np.linspace(-hh/2, hh/2, 5):
-            ax.plot([hw/2, hw/2], [y_pos, y_pos + 0.4], color='white', linewidth=2.0)
-        # Barra horizontal central
-        ax.plot([-hw/2, hw/2], [0, 0], color='white', linewidth=2.0, linestyle=(0, (3, 3)))
+        h_seg_esq = [(-hw/2, -hh/2), (-hw/2, hh/2)]
+        h_seg_dir = [(hw/2, -hh/2), (hw/2, hh/2)]
+        h_seg_meio = [(-hw/2, 0), (hw/2, 0)]
+
+        def desenhar_segmento_tracejado(p1, p2, ang_deg):
+            x1, y1 = rot(p1[0], p1[1], ang_deg)
+            x2, y2 = rot(p2[0], p2[1], ang_deg)
+            passos = 6
+            for k in range(passos):
+                t1 = k / passos
+                t2 = min(1.0, (k + 0.6) / passos)
+                xa = x1 + (x2 - x1) * t1
+                ya = y1 + (y2 - y1) * t1
+                xb = x1 + (x2 - x1) * t2
+                yb = y1 + (y2 - y1) * t2
+                ax.plot([xa, xb], [ya, yb], color='white', linewidth=2.0)
+
+        desenhar_segmento_tracejado(h_seg_esq[0], h_seg_esq[1], rumo_mag)
+        desenhar_segmento_tracejado(h_seg_dir[0], h_seg_dir[1], rumo_mag)
+        desenhar_segmento_tracejado(h_seg_meio[0], h_seg_meio[1], rumo_mag)
 
         # Indicação de Peso Máximo (5.0t) com fonte menor e posicionada na diagonal inferior esquerda
         ax.text(-5.0, -3.5, f"{self.peso_kg/1000:.1f}t", color='white', fontsize=6.0, fontweight='bold', ha='center', va='center', bbox=dict(boxstyle="square,pad=0.15", facecolor="#2B6CB0", edgecolor="white"))
