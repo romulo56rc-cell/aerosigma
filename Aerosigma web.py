@@ -11,8 +11,8 @@ from streamlit_geolocation import streamlit_geolocation
 st.set_page_config(page_title="Aerosigma - Helipontos", page_icon="🚁", layout="centered")
 
 st.title("🚁 AEROSIGMA Web")
-st.subheader("Gerador Profissional de Helipontos com Cotas Visuais")
-st.write("Planta técnica ajustada com as dimensões impressas nas margens, estilo idêntico à referência de campo.")
+st.subheader("Gerador Profissional de Helipontos (Padrão Completo Regulado)")
+st.write("Planta técnica com flechas de aproximação direcionadas ao H, cotas, peso e biruta.")
 
 class AerosigmaEngine:
     def __init__(self, lat, lon, alt_m, nome_projeto="Heliponto Aerosigma", peso_kg=5000):
@@ -296,9 +296,17 @@ class AerosigmaEngine:
 
         ax.text(0, 0, 'H', color='white', fontsize=32, fontweight='bold', ha='center', va='center')
 
-        # Inserção das cotas exatas nas margens (igual à foto de referência de 20m)
+        # Cotas de tamanho nas margens
         ax.text(0, tamanho_tlof_m/2 + 2.5, f"{tamanho_tlof_m} m", color='white', fontsize=11, fontweight='bold', ha='center', va='center', bbox=dict(boxstyle="round,pad=0.3", facecolor="#1A365D", edgecolor="white"))
         ax.text(tamanho_tlof_m/2 + 3.5, 0, f"{tamanho_tlof_m} m", color='white', fontsize=11, fontweight='bold', ha='center', va='center', rotation=90, bbox=dict(boxstyle="round,pad=0.3", facecolor="#1A365D", edgecolor="white"))
+
+        # Flechas de aproximação DENTRO do quadrado, apontando para o centro (sentido H) e saindo
+        offset_f = tamanho_tlof_m / 4.0
+        ax.annotate('', xy=(0, offset_f), xytext=(0, offset_f + 3.0), arrowprops=dict(arrowstyle="->", color="white", lw=2.5))
+        ax.annotate('', xy=(0, -offset_f), xytext=(0, -offset_f - 3.0), arrowprops=dict(arrowstyle="->", color="white", lw=2.5))
+
+        # Indicador de Peso Máximo (MTOW) desenhado no canto superior esquerdo da TLOF
+        ax.text(-tamanho_tlof_m/2 + 2.0, tamanho_tlof_m/2 - 2.0, f"{self.peso_kg/1000:.1f}t", color='white', fontsize=9, fontweight='bold', ha='center', va='center', bbox=dict(boxstyle="square,pad=0.2", facecolor="#2B6CB0", edgecolor="white"))
 
         tri_dist = tamanho_tlof_m / 2.0 * 0.75
         tri_x = tri_dist * math.cos(rad_rumo)
