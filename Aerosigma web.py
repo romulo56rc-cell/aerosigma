@@ -11,8 +11,8 @@ from streamlit_geolocation import streamlit_geolocation
 st.set_page_config(page_title="Aerosigma - Helipontos", page_icon="🚁", layout="centered")
 
 st.title("🚁 AEROSIGMA Web")
-st.subheader("Gerador Profissional de Helipontos (Padrão Final Detalhado)")
-st.write("Planta técnica ajustada com cotas, biruta e peso dentro da TLOF.")
+st.subheader("Gerador Profissional de Helipontos (Padrão Exato da Obra)")
+st.write("Planta técnica sincronizada com a disposição real das setas, cotas e marcações na TLOF.")
 
 class AerosigmaEngine:
     def __init__(self, lat, lon, alt_m, nome_projeto="Heliponto Aerosigma", peso_kg=5000):
@@ -294,25 +294,26 @@ class AerosigmaEngine:
                                  label=f'TLOF Principal ({tamanho_tlof_m}m)')
         ax.add_patch(tlof)
 
+        # Letra H central perfeitamente visível
         ax.text(0, 0, 'H', color='white', fontsize=32, fontweight='bold', ha='center', va='center')
 
-        # Cota de tamanho escrita DENTRO do quadrado (topo e lateral)
-        ax.text(0, tamanho_tlof_m/2 - 2.0, f"{tamanho_tlof_m} m", color='white', fontsize=10, fontweight='bold', ha='center', va='center', bbox=dict(boxstyle="round,pad=0.2", facecolor="#2B6CB0", edgecolor="white"))
-        ax.text(tamanho_tlof_m/2 - 2.5, 0, f"{tamanho_tlof_m} m", color='white', fontsize=10, fontweight='bold', ha='center', va='center', rotation=90, bbox=dict(boxstyle="round,pad=0.2", facecolor="#2B6CB0", edgecolor="white"))
+        # Indicação de Peso Máximo (MTOW) logo acima da letra H
+        ax.text(0, tamanho_tlof_m * 0.20, f"{self.peso_kg/1000:.1f}t", color='white', fontsize=9, fontweight='bold', ha='center', va='center', bbox=dict(boxstyle="square,pad=0.25", facecolor="#2B6CB0", edgecolor="white"))
 
-        # Flechas de aproximação uma ao lado da outra DENTRO do quadrado, apontando para o centro (sentido H)
-        ax.annotate('', xy=(-2.0, -tamanho_tlof_m/4.0), xytext=(-2.0, -tamanho_tlof_m/4.0 - 2.5), arrowprops=dict(arrowstyle="->", color="white", lw=2))
-        ax.annotate('', xy=(2.0, tamanho_tlof_m/4.0), xytext=(2.0, tamanho_tlof_m/4.0 + 2.5), arrowprops=dict(arrowstyle="->", color="white", lw=2))
+        # Cotas de tamanho posicionadas de forma limpa nas margens internas
+        ax.text(0, tamanho_tlof_m/2 - 1.8, f"{tamanho_tlof_m} m", color='white', fontsize=9, fontweight='bold', ha='center', va='center', bbox=dict(boxstyle="round,pad=0.2", facecolor="#2B6CB0", edgecolor="white"))
+        ax.text(tamanho_tlof_m/2 - 2.2, 0, f"{tamanho_tlof_m} m", color='white', fontsize=9, fontweight='bold', ha='center', va='center', rotation=90, bbox=dict(boxstyle="round,pad=0.2", facecolor="#2B6CB0", edgecolor="white"))
 
-        # Peso Máximo (MTOW) perto da letra H (acima do centro)
-        ax.text(0, tamanho_tlof_m * 0.18, f"{self.peso_kg/1000:.1f}t", color='white', fontsize=10, fontweight='bold', ha='center', va='center', bbox=dict(boxstyle="square,pad=0.3", facecolor="#2B6CB0", edgecolor="white"))
+        # Duas flechas de aproximação EXATAMENTE LADO A LADO no canto superior esquerdo da TLOF (igual à foto real)
+        ax.annotate('', xy=(-3.5, 4.0), xytext=(-3.5, 7.5), arrowprops=dict(arrowstyle="->", color="white", lw=2.5))
+        ax.annotate('', xy=(-7.0, 4.0), xytext=(-7.0, 0.5), arrowprops=dict(arrowstyle="->", color="white", lw=2.5))
 
         # Biruta desenhada DENTRO do quadrado (canto superior esquerdo)
-        biruta_x, biruta_y = -tamanho_tlof_m/2 + 3.0, tamanho_tlof_m/2 - 3.0
-        ax.plot([biruta_x, biruta_x], [biruta_y, biruta_y + 4], color='black', linewidth=1.5)
-        biruta_cone = patches.Polygon([[biruta_x, biruta_y + 4], [biruta_x + 4, biruta_y + 3], [biruta_x + 4, biruta_y + 1]], color='#DD6B20')
+        biruta_x, biruta_y = -tamanho_tlof_m/2 + 2.5, tamanho_tlof_m/2 - 2.5
+        ax.plot([biruta_x, biruta_x], [biruta_y, biruta_y + 3.5], color='black', linewidth=1.5)
+        biruta_cone = patches.Polygon([[biruta_x, biruta_y + 3.5], [biruta_x + 3.5, biruta_y + 2.5], [biruta_x + 3.5, biruta_y + 1]], color='#DD6B20')
         ax.add_patch(biruta_cone)
-        ax.text(biruta_x + 2, biruta_y + 5.5, 'BIRUTA', fontsize=6, fontweight='bold', color='white', ha='center')
+        ax.text(biruta_x + 1.8, biruta_y + 4.8, 'BIRUTA', fontsize=5, fontweight='bold', color='white', ha='center')
 
         tri_dist = tamanho_tlof_m / 2.0 * 0.75
         tri_x = tri_dist * math.cos(rad_rumo)
