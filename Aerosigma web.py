@@ -11,8 +11,8 @@ from streamlit_geolocation import streamlit_geolocation
 st.set_page_config(page_title="Aerosigma - Helipontos", page_icon="🚁", layout="centered")
 
 st.title("🚁 AEROSIGMA Web")
-st.subheader("Gerador Profissional de Heliponto (Triângulo Branco e H Azul Centralizado)")
-st.write("Planta técnica com triângulo branco, H azul no centro, biruta e peso devidamente posicionados.")
+st.subheader("Gerador Profissional de Heliponto (Orientação Magnética Central)")
+st.write("Planta técnica com triângulo e H centralizados e orientados ao rumo magnético.")
 
 class AerosigmaEngine:
     def __init__(self, lat, lon, alt_m, nome_projeto="Heliponto Aerosigma", peso_kg=5000):
@@ -109,15 +109,16 @@ class AerosigmaEngine:
             coord_relativa(-h_largura/2, -h_espessura/2)
         ]
 
-        rad_rumo = math.radians(90 - rumo_verdadeiro)
+        rumo_mag = self.converter_rumo_verdadeiro_para_magnetico(rumo_verdadeiro)
+        rad_mag = math.radians(90 - rumo_mag)
         tam = tamanho_tlof_m * 0.08
 
-        p1_x = tam * math.cos(rad_rumo)
-        p1_y = tam * math.sin(rad_rumo)
-        p2_x = tam * math.cos(rad_rumo + math.radians(135))
-        p2_y = tam * math.sin(rad_rumo + math.radians(135))
-        p3_x = tam * math.cos(rad_rumo - math.radians(135))
-        p3_y = tam * math.sin(rad_rumo - math.radians(135))
+        p1_x = tam * math.cos(rad_mag)
+        p1_y = tam * math.sin(rad_mag)
+        p2_x = tam * math.cos(rad_mag + math.radians(135))
+        p2_y = tam * math.sin(rad_mag + math.radians(135))
+        p3_x = tam * math.cos(rad_mag - math.radians(135))
+        p3_y = tam * math.sin(rad_mag - math.radians(135))
 
         triangulo = [
             coord_relativa(p1_x, p1_y),
@@ -291,12 +292,16 @@ class AerosigmaEngine:
                                  label=f'TLOF Principal ({tamanho_tlof_m}m)')
         ax.add_patch(tlof)
 
-        # Triângulo orientador branco perfeitamente centralizado no centro (0, 0)
+        # Rumo magnético para orientação exata do triângulo e do H
+        rumo_mag = self.converter_rumo_verdadeiro_para_magnetico(rumo_verdadeiro)
+        rad_mag = math.radians(90 - rumo_mag)
+
+        # Triângulo orientador branco centralizado e orientado para o norte/rumo magnético
         triangle = patches.RegularPolygon((0, 0), numVertices=3, radius=4.5, 
-                                          orientation=rad_rumo - math.pi/2, color='white')
+                                          orientation=rad_mag - math.pi/2, color='white')
         ax.add_patch(triangle)
 
-        # Letra H azul centralizada dentro do triângulo branco
+        # Letra H azul perfeitamente centralizada e encaixada dentro do triângulo branco
         ax.text(0, 0, 'H', color='#1A365D', fontsize=24, fontweight='bold', ha='center', va='center')
 
         # Indicação de Peso Máximo (5.0t) com fonte menor e posicionada na diagonal inferior esquerda
