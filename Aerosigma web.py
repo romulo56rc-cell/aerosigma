@@ -11,8 +11,8 @@ from streamlit_geolocation import streamlit_geolocation
 st.set_page_config(page_title="Aerosigma - Helipontos", page_icon="🚁", layout="centered")
 
 st.title("🚁 AEROSIGMA Web")
-st.subheader("Gerador Profissional de Heliponto (Padrão Exato da Foto)")
-st.write("Planta técnica com o triângulo em linhas tracejadas e a letra H centralizada exatamente como na referência visual.")
+st.subheader("Gerador Profissional de Heliponto (Padrão Tracejado Exato da Foto)")
+st.write("Planta técnica com triângulo e letra H tracejados e centralizados conforme a referência visual.")
 
 class AerosigmaEngine:
     def __init__(self, lat, lon, alt_m, nome_projeto="Heliponto Aerosigma", peso_kg=5000):
@@ -77,39 +77,7 @@ class AerosigmaEngine:
             p_lon = self.lon + (dx / (111000.0 * math.cos(math.radians(self.lat))))
             pontos_tlof.append((p_lat, p_lon, self.alt_m + 0.1))
         pontos_tlof.append(pontos_tlof[0])
-
-        h_largura = tamanho_tlof_m * 0.25
-        h_altura = tamanho_tlof_m * 0.4
-        h_espessura = tamanho_tlof_m * 0.05
-
-        def coord_relativa(dx, dy):
-            plat = self.lat + (dy / 111000.0)
-            plon = self.lon + (dx / (111000.0 * math.cos(math.radians(self.lat))))
-            return plat, plon, self.alt_m + 0.2
-
-        h_esq = [
-            coord_relativa(-h_largura/2, -h_altura/2),
-            coord_relativa(-h_largura/2 + h_espessura, -h_altura/2),
-            coord_relativa(-h_largura/2 + h_espessura, h_altura/2),
-            coord_relativa(-h_largura/2, h_altura/2),
-            coord_relativa(-h_largura/2, -h_altura/2)
-        ]
-        h_dir = [
-            coord_relativa(h_largura/2 - h_espessura, -h_altura/2),
-            coord_relativa(h_largura/2, -h_altura/2),
-            coord_relativa(h_largura/2, h_altura/2),
-            coord_relativa(h_largura/2 - h_espessura, h_altura/2),
-            coord_relativa(h_largura/2 - h_espessura, -h_altura/2)
-        ]
-        h_meio = [
-            coord_relativa(-h_largura/2, -h_espessura/2),
-            coord_relativa(h_largura/2, -h_espessura/2),
-            coord_relativa(h_largura/2, h_espessura/2),
-            coord_relativa(-h_largura/2, h_espessura/2),
-            coord_relativa(-h_largura/2, -h_espessura/2)
-        ]
-
-        return pontos_tlof, [h_esq, h_dir, h_meio], []
+        return pontos_tlof, [], []
 
     def gerar_cone_aproximacao_3d(self, azimute_rampa_deg, comprimento_m=1200, inclinacao_rampa=8.0, abertura_deg=15):
         passos = 10
@@ -143,7 +111,7 @@ class AerosigmaEngine:
             poligonos_cone.append(quad_3d)
         return poligonos_cone
 
-    def exportar_kml(self, nome_ficheiro, pontos_fato, pontos_tlof, barras_h, poligonos_cone, nome_proj):
+    def exportar_kml(self, nome_ficheiro, pontos_fato, pontos_tlof, poligonos_cone, nome_proj):
         kml_header = f"""<?xml version="1.0" encoding="UTF-8"?>
 <kml xmlns="http://www.opengis.net/kml/2.2">
   <Document>
@@ -155,10 +123,6 @@ class AerosigmaEngine:
     <Style id="estiloTlof">
       <PolyStyle><color>f05d361a</color><fill>1</fill><outline>1</outline></PolyStyle>
       <LineStyle><color>ffffffff</color><width>2</width></LineStyle>
-    </Style>
-    <Style id="estiloMarcaBranca">
-      <PolyStyle><color>ffffffff</color><fill>1</fill><outline>1</outline></PolyStyle>
-      <LineStyle><color>ffffffff</color><width>1</width></LineStyle>
     </Style>
 """
         kml_body = """    <Placemark>
@@ -182,19 +146,6 @@ class AerosigmaEngine:
         for p in pontos_tlof:
             kml_body += f"              {p[1]},{p[0]},{p[2]}\n"
         kml_body += """            </coordinates></LinearRing></outerBoundaryIs>
-      </Polygon>
-    </Placemark>\n"""
-
-        for idx, barra in enumerate(barras_h):
-            kml_body += f"""    <Placemark>
-      <name>Letra H - Parte {idx+1}</name>
-      <styleUrl>#estiloMarcaBranca</styleUrl>
-      <Polygon>
-        <altitudeMode>absolute</altitudeMode>
-        <outerBoundaryIs><LinearRing><coordinates>\n"""
-            for p in barra:
-                kml_body += f"              {p[1]},{p[0]},{p[2]}\n"
-            kml_body += """            </coordinates></LinearRing></outerBoundaryIs>
       </Polygon>
     </Placemark>\n"""
 
@@ -258,24 +209,29 @@ class AerosigmaEngine:
                                  label=f'TLOF Principal ({tamanho_tlof_m}m)')
         ax.add_patch(tlof)
 
-        # Letra H centralizada em branco (exatamente igual à foto)
-        ax.text(0, 0, 'H', color='white', fontsize=32, fontweight='bold', ha='center', va='center')
-
-        # Triângulo orientador tracejado branco ao redor do H, apontando para o norte/rumo magnético
-        rumo_mag = self.converter_rumo_verdadeiro_para_magnetico(rumo_verdadeiro)
+        # Desenho do Triângulo Tracejado Orientador (igual à foto)
+        r_tri = 5.0
         rad_mag = math.radians(90 - rumo_mag)
-        
-        # Desenhar o triângulo em linhas tracejadas brancas ao redor do centro
-        r_tri = 5.5
         pts_tri = []
         for j in range(3):
-            angulo_vertice = rad_mag + j * (2 * math.pi / 3)
-            pts_tri.append((r_tri * math.cos(angulo_vertice), r_tri * math.sin(angulo_vertice)))
+            ang = rad_mag + j * (2 * math.pi / 3)
+            pts_tri.append((r_tri * math.cos(ang), r_tri * math.sin(ang)))
         pts_tri.append(pts_tri[0])
-        
+
         for j in range(3):
             ax.plot([pts_tri[j][0], pts_tri[j+1][0]], [pts_tri[j][1], pts_tri[j+1][1]], 
-                    color='white', linewidth=2.5, linestyle='--')
+                    color='white', linewidth=2.0, linestyle=(0, (5, 5)))
+
+        # Desenho da Letra H em traços tracejados (estilo exato da foto)
+        hw, hh = 1.8, 3.0
+        # Perna esquerda tracejada
+        for y_pos in np.linspace(-hh/2, hh/2, 5):
+            ax.plot([-hw/2, -hw/2], [y_pos, y_pos + 0.4], color='white', linewidth=2.0)
+        # Perna direita tracejada
+        for y_pos in np.linspace(-hh/2, hh/2, 5):
+            ax.plot([hw/2, hw/2], [y_pos, y_pos + 0.4], color='white', linewidth=2.0)
+        # Barra horizontal central
+        ax.plot([-hw/2, hw/2], [0, 0], color='white', linewidth=2.0, linestyle=(0, (3, 3)))
 
         # Indicação de Peso Máximo (5.0t) com fonte menor e posicionada na diagonal inferior esquerda
         ax.text(-5.0, -3.5, f"{self.peso_kg/1000:.1f}t", color='white', fontsize=6.0, fontweight='bold', ha='center', va='center', bbox=dict(boxstyle="square,pad=0.15", facecolor="#2B6CB0", edgecolor="white"))
@@ -378,13 +334,13 @@ rumo = st.sidebar.slider("Rumo de Aproximação (°)", 0.0, 360.0, 140.0, key="r
 if st.button("🚀 Gerar Ficheiros do Heliponto", key="btn_gerar"):
     engine = AerosigmaEngine(lat, lon, alt, nome_projeto=nome_proj, peso_kg=peso)
     fato = engine.gerar_fato_tlof_personalizada(tamanho_tlof)
-    tlof_pts, barras_h, _ = engine.gerar_geometria_tlof_e_marcas(tamanho_tlof, rumo)
+    tlof_pts, _, _ = engine.gerar_geometria_tlof_e_marcas(tamanho_tlof, rumo)
     cone = engine.gerar_cone_aproximacao_3d(azimute_rampa_deg=rumo)
     
     nome_kml = f"{nome_proj.replace(' ', '_')}.kml"
     nome_pdf = f"Planta_Tecnica_{nome_proj.replace(' ', '_')}.pdf"
 
-    engine.exportar_kml(nome_kml, fato, tlof_pts, barras_h, cone, nome_proj)
+    engine.exportar_kml(nome_kml, fato, tlof_pts, cone, nome_proj)
     engine.gerar_planta_pdf(nome_pdf, tamanho_tlof, rumo)
 
     st.success("✅ Projeto gerado com sucesso!")
