@@ -348,7 +348,10 @@ class AerosigmaEngine:
 # Interface Web com Streamlit
 st.sidebar.header("⚙️ Parâmetros do Heliponto")
 
-# Inicialização correta do Session State para forçar a atualização
+st.sidebar.markdown("### 📍 Obter Posição GPS")
+loc = streamlit_geolocation()
+
+# Limpa ou inicializa o estado se ainda não existir
 if 'lat' not in st.session_state:
     st.session_state.lat = -23.550520
 if 'lon' not in st.session_state:
@@ -356,35 +359,27 @@ if 'lon' not in st.session_state:
 if 'alt' not in st.session_state:
     st.session_state.alt = 760.0
 
-st.sidebar.markdown("### 📍 Obter Posição GPS")
-loc = streamlit_geolocation()
-
+# Se o GPS capturar novos dados, atualiza diretamente as chaves dos widgets do Streamlit
 if loc and loc.get('latitude') and loc.get('longitude'):
-    st.session_state.lat = loc['latitude']
-    st.session_state.lon = loc['longitude']
+    st.session_state.lat_input = float(loc['latitude'])
+    st.session_state.lon_input = float(loc['longitude'])
     
     try:
         url_elev = f"https://api.open-elevation.com/api/v1/lookup?locations={loc['latitude']},{loc['longitude']}"
         res = requests.get(url_elev, timeout=3).json()
         if 'results' in res and len(res['results']) > 0:
-            st.session_state.alt = float(res['results'][0]['elevation'])
+            st.session_state.alt_input = float(res['results'][0]['elevation'])
     except:
         pass
 
     st.sidebar.success("GPS OK! Coordenadas e Altitude atualizadas.")
-    st.rerun()
 
 nome_proj = st.sidebar.text_input("Nome do Projeto", "Heliponto 20m - 5t", key="nome_projeto")
 
-# Campos vinculados diretamente ao session_state para atualizar os valores na tela
-lat = st.sidebar.number_input("Latitude", value=float(st.session_state.lat), format="%.6f", key="lat_input")
-lon = st.sidebar.number_input("Longitude", value=float(st.session_state.lon), format="%.6f", key="lon_input")
-alt = st.sidebar.number_input("Altitude (metros MSL)", value=float(st.session_state.alt), format="%.1f", key="alt_input")
-
-# Atualiza o estado se o utilizador alterar manualmente nos campos
-st.session_state.lat = lat
-st.session_state.lon = lon
-st.session_state.alt = alt
+# Campos numéricos ligados diretamente aos IDs de estado para aceitar a injeção do GPS
+lat = st.sidebar.number_input("Latitude", format="%.6f", key="lat_input")
+lon = st.sidebar.number_input("Longitude", format="%.6f", key="lon_input")
+alt = st.sidebar.number_input("Altitude (metros MSL)", format="%.1f", key="alt_input")
 
 opcoes_peso = {
     "3 Toneladas (3.000 kg)": 3000.0,
