@@ -11,8 +11,8 @@ from streamlit_geolocation import streamlit_geolocation
 st.set_page_config(page_title="Aerosigma - Helipontos", page_icon="🚁", layout="centered")
 
 st.title("🚁 AEROSIGMA Web")
-st.subheader("Gerador Profissional de Helipontos com GPS Automático")
-st.write("Utilize a geolocalização do telemóvel para preencher as coordenadas e altitude reais instantaneamente.")
+st.subheader("Gerador Profissional de Helipontos com Cotas Visuais")
+st.write("Planta técnica ajustada com as dimensões impressas nas margens, estilo idêntico à referência de campo.")
 
 class AerosigmaEngine:
     def __init__(self, lat, lon, alt_m, nome_projeto="Heliponto Aerosigma", peso_kg=5000):
@@ -296,6 +296,10 @@ class AerosigmaEngine:
 
         ax.text(0, 0, 'H', color='white', fontsize=32, fontweight='bold', ha='center', va='center')
 
+        # Inserção das cotas exatas nas margens (igual à foto de referência de 20m)
+        ax.text(0, tamanho_tlof_m/2 + 2.5, f"{tamanho_tlof_m} m", color='white', fontsize=11, fontweight='bold', ha='center', va='center', bbox=dict(boxstyle="round,pad=0.3", facecolor="#1A365D", edgecolor="white"))
+        ax.text(tamanho_tlof_m/2 + 3.5, 0, f"{tamanho_tlof_m} m", color='white', fontsize=11, fontweight='bold', ha='center', va='center', rotation=90, bbox=dict(boxstyle="round,pad=0.3", facecolor="#1A365D", edgecolor="white"))
+
         tri_dist = tamanho_tlof_m / 2.0 * 0.75
         tri_x = tri_dist * math.cos(rad_rumo)
         tri_y = tri_dist * math.sin(rad_rumo)
@@ -351,15 +355,13 @@ st.sidebar.header("⚙️ Parâmetros do Heliponto")
 st.sidebar.markdown("### 📍 Obter Posição GPS")
 loc = streamlit_geolocation()
 
-# Limpa ou inicializa o estado se ainda não existir
-if 'lat' not in st.session_state:
-    st.session_state.lat = -23.550520
-if 'lon' not in st.session_state:
-    st.session_state.lon = -46.633308
-if 'alt' not in st.session_state:
-    st.session_state.alt = 760.0
+if 'lat_input' not in st.session_state:
+    st.session_state.lat_input = -23.550520
+if 'lon_input' not in st.session_state:
+    st.session_state.lon_input = -46.633308
+if 'alt_input' not in st.session_state:
+    st.session_state.alt_input = 760.0
 
-# Se o GPS capturar novos dados, atualiza diretamente as chaves dos widgets do Streamlit
 if loc and loc.get('latitude') and loc.get('longitude'):
     st.session_state.lat_input = float(loc['latitude'])
     st.session_state.lon_input = float(loc['longitude'])
@@ -376,7 +378,6 @@ if loc and loc.get('latitude') and loc.get('longitude'):
 
 nome_proj = st.sidebar.text_input("Nome do Projeto", "Heliponto 20m - 5t", key="nome_projeto")
 
-# Campos numéricos ligados diretamente aos IDs de estado para aceitar a injeção do GPS
 lat = st.sidebar.number_input("Latitude", format="%.6f", key="lat_input")
 lon = st.sidebar.number_input("Longitude", format="%.6f", key="lon_input")
 alt = st.sidebar.number_input("Altitude (metros MSL)", format="%.1f", key="alt_input")
