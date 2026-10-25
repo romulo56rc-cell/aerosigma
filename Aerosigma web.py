@@ -11,8 +11,8 @@ from streamlit_geolocation import streamlit_geolocation
 st.set_page_config(page_title="Aerosigma - Helipontos", page_icon="🚁", layout="centered")
 
 st.title("🚁 AEROSIGMA Web")
-st.subheader("Gerador Profissional de Helipontos com Opções de Peso e Tamanho")
-st.write("Selecione as opções reguladas na barra lateral para gerar o PDF técnico e o KML 3D com precisão exata.")
+st.subheader("Gerador Profissional de Helipontos com GPS Automático")
+st.write("Utilize a geolocalização do telemóvel para preencher as coordenadas e altitude reais instantaneamente.")
 
 class AerosigmaEngine:
     def __init__(self, lat, lon, alt_m, nome_projeto="Heliponto Aerosigma", peso_kg=5000):
@@ -348,37 +348,44 @@ class AerosigmaEngine:
 # Interface Web com Streamlit
 st.sidebar.header("⚙️ Parâmetros do Heliponto")
 
-if 'lat_val' not in st.session_state:
-    st.session_state.lat_val = -23.550520
-if 'lon_val' not in st.session_state:
-    st.session_state.lon_val = -46.633308
-if 'alt_val' not in st.session_state:
-    st.session_state.alt_val = 760.0
+# Inicialização correta do Session State para forçar a atualização
+if 'lat' not in st.session_state:
+    st.session_state.lat = -23.550520
+if 'lon' not in st.session_state:
+    st.session_state.lon = -46.633308
+if 'alt' not in st.session_state:
+    st.session_state.alt = 760.0
 
 st.sidebar.markdown("### 📍 Obter Posição GPS")
 loc = streamlit_geolocation()
 
 if loc and loc.get('latitude') and loc.get('longitude'):
-    st.session_state.lat_val = loc['latitude']
-    st.session_state.lon_val = loc['longitude']
+    st.session_state.lat = loc['latitude']
+    st.session_state.lon = loc['longitude']
     
     try:
         url_elev = f"https://api.open-elevation.com/api/v1/lookup?locations={loc['latitude']},{loc['longitude']}"
         res = requests.get(url_elev, timeout=3).json()
         if 'results' in res and len(res['results']) > 0:
-            st.session_state.alt_val = float(res['results'][0]['elevation'])
+            st.session_state.alt = float(res['results'][0]['elevation'])
     except:
         pass
 
     st.sidebar.success("GPS OK! Coordenadas e Altitude atualizadas.")
+    st.rerun()
 
 nome_proj = st.sidebar.text_input("Nome do Projeto", "Heliponto 20m - 5t", key="nome_projeto")
 
-lat = st.sidebar.number_input("Latitude", value=float(st.session_state.lat_val), format="%.6f", key="lat_input")
-lon = st.sidebar.number_input("Longitude", value=float(st.session_state.lon_val), format="%.6f", key="lon_input")
-alt = st.sidebar.number_input("Altitude (metros MSL)", value=float(st.session_state.alt_val), format="%.1f", key="alt_input")
+# Campos vinculados diretamente ao session_state para atualizar os valores na tela
+lat = st.sidebar.number_input("Latitude", value=float(st.session_state.lat), format="%.6f", key="lat_input")
+lon = st.sidebar.number_input("Longitude", value=float(st.session_state.lon), format="%.6f", key="lon_input")
+alt = st.sidebar.number_input("Altitude (metros MSL)", value=float(st.session_state.alt), format="%.1f", key="alt_input")
 
-# Seleção de Peso Máximo por Opções (incluindo a opção de 5 Toneladas)
+# Atualiza o estado se o utilizador alterar manualmente nos campos
+st.session_state.lat = lat
+st.session_state.lon = lon
+st.session_state.alt = alt
+
 opcoes_peso = {
     "3 Toneladas (3.000 kg)": 3000.0,
     "5 Toneladas (5.000 kg)": 5000.0,
@@ -388,7 +395,6 @@ opcoes_peso = {
 escolha_peso_txt = st.sidebar.selectbox("Peso Máximo da Aeronave (MTOW)", list(opcoes_peso.keys()), index=1)
 peso = opcoes_peso[escolha_peso_txt]
 
-# Seleção do Tamanho do Heliponto por Opções (incluindo 20 metros)
 opcoes_tamanho = {
     "15 Metros (15m)": 15.0,
     "20 Metros (20m)": 20.0,
