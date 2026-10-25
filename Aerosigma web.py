@@ -11,8 +11,8 @@ from streamlit_geolocation import streamlit_geolocation
 st.set_page_config(page_title="Aerosigma - Helipontos", page_icon="🚁", layout="centered")
 
 st.title("🚁 AEROSIGMA Web")
-st.subheader("Gerador Profissional de Heliponto (Versão Final Consolidada)")
-st.write("Planta técnica com a biruta no canto inferior esquerdo e peso devidamente posicionado.")
+st.subheader("Gerador Profissional de Heliponto (Posicionamento Final Exato)")
+st.write("Planta técnica sincronizada com a biruta no canto inferior esquerdo e peso ajustado.")
 
 class AerosigmaEngine:
     def __init__(self, lat, lon, alt_m, nome_projeto="Heliponto Aerosigma", peso_kg=5000):
@@ -307,7 +307,7 @@ class AerosigmaEngine:
         ax.annotate('', xy=(-3.0, 5.0), xytext=(-3.0, 8.0), arrowprops=dict(arrowstyle="->", color="white", lw=2.5))
         ax.annotate('', xy=(-6.5, 5.0), xytext=(-6.5, 2.0), arrowprops=dict(arrowstyle="->", color="white", lw=2.5))
 
-        # Biruta posicionada exatamente no CANTO INFERIOR ESQUERDO da TLOF
+        # Biruta posicionada exatamente no CANTO INFERIOR ESQUERDO (no local do ponto branco)
         biruta_x, biruta_y = -tamanho_tlof_m/2 + 2.5, -tamanho_tlof_m/2 + 2.5
         ax.plot([biruta_x, biruta_x], [biruta_y, biruta_y + 3.0], color='black', linewidth=1.5)
         biruta_cone = patches.Polygon([[biruta_x, biruta_y + 3.0], [biruta_x + 3.0, biruta_y + 2.2], [biruta_x + 3.0, biruta_y + 0.8]], color='#DD6B20')
