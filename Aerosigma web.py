@@ -11,8 +11,8 @@ from streamlit_geolocation import streamlit_geolocation
 st.set_page_config(page_title="Aerosigma - Helipontos", page_icon="🚁", layout="centered")
 
 st.title("🚁 AEROSIGMA Web")
-st.subheader("Gerador Profissional de Heliponto (Ajuste Final da Legibilidade)")
-st.write("Planta técnica com a etiqueta da biruta formatada com caixa de destaque.")
+st.subheader("Gerador Profissional de Heliponto (Triângulo Branco e H Azul Centralizado)")
+st.write("Planta técnica com triângulo branco, H azul no centro, biruta e peso devidamente posicionados.")
 
 class AerosigmaEngine:
     def __init__(self, lat, lon, alt_m, nome_projeto="Heliponto Aerosigma", peso_kg=5000):
@@ -109,18 +109,15 @@ class AerosigmaEngine:
             coord_relativa(-h_largura/2, -h_espessura/2)
         ]
 
-        tri_dist = meio_tlof * 0.75
         rad_rumo = math.radians(90 - rumo_verdadeiro)
-        cx = tri_dist * math.cos(rad_rumo)
-        cy = tri_dist * math.sin(rad_rumo)
         tam = tamanho_tlof_m * 0.08
 
-        p1_x = cx + tam * math.cos(rad_rumo)
-        p1_y = cy + tam * math.sin(rad_rumo)
-        p2_x = cx + tam * math.cos(rad_rumo + math.radians(135))
-        p2_y = cy + tam * math.sin(rad_rumo + math.radians(135))
-        p3_x = cx + tam * math.cos(rad_rumo - math.radians(135))
-        p3_y = cy + tam * math.sin(rad_rumo - math.radians(135))
+        p1_x = tam * math.cos(rad_rumo)
+        p1_y = tam * math.sin(rad_rumo)
+        p2_x = tam * math.cos(rad_rumo + math.radians(135))
+        p2_y = tam * math.sin(rad_rumo + math.radians(135))
+        p3_x = tam * math.cos(rad_rumo - math.radians(135))
+        p3_y = tam * math.sin(rad_rumo - math.radians(135))
 
         triangulo = [
             coord_relativa(p1_x, p1_y),
@@ -181,8 +178,8 @@ class AerosigmaEngine:
       <LineStyle><color>ffffffff</color><width>1</width></LineStyle>
     </Style>
     <Style id="estiloTriangulo">
-      <PolyStyle><color>ff4bc9ec</color><fill>1</fill><outline>1</outline></PolyStyle>
-      <LineStyle><color>ff00ffff</color><width>2</width></LineStyle>
+      <PolyStyle><color>ffffffff</color><fill>1</fill><outline>1</outline></PolyStyle>
+      <LineStyle><color>ffffffff</color><width>2</width></LineStyle>
     </Style>
 """
         kml_body = """    <Placemark>
@@ -294,8 +291,13 @@ class AerosigmaEngine:
                                  label=f'TLOF Principal ({tamanho_tlof_m}m)')
         ax.add_patch(tlof)
 
-        # Letra H central perfeitamente limpa e visível
-        ax.text(0, 0, 'H', color='white', fontsize=32, fontweight='bold', ha='center', va='center')
+        # Triângulo orientador branco perfeitamente centralizado no centro (0, 0)
+        triangle = patches.RegularPolygon((0, 0), numVertices=3, radius=4.5, 
+                                          orientation=rad_rumo - math.pi/2, color='white')
+        ax.add_patch(triangle)
+
+        # Letra H azul centralizada dentro do triângulo branco
+        ax.text(0, 0, 'H', color='#1A365D', fontsize=24, fontweight='bold', ha='center', va='center')
 
         # Indicação de Peso Máximo (5.0t) com fonte menor e posicionada na diagonal inferior esquerda
         ax.text(-5.0, -3.5, f"{self.peso_kg/1000:.1f}t", color='white', fontsize=6.0, fontweight='bold', ha='center', va='center', bbox=dict(boxstyle="square,pad=0.15", facecolor="#2B6CB0", edgecolor="white"))
@@ -307,19 +309,12 @@ class AerosigmaEngine:
         ax.annotate('', xy=(-3.0, 5.0), xytext=(-3.0, 8.0), arrowprops=dict(arrowstyle="->", color="white", lw=2.5))
         ax.annotate('', xy=(-6.5, 5.0), xytext=(-6.5, 2.0), arrowprops=dict(arrowstyle="->", color="white", lw=2.5))
 
-        # Biruta posicionada exatamente no local da bolinha branca com caixa de destaque (bbox) para máxima visibilidade
+        # Biruta posicionada exatamente no canto inferior esquerdo, logo fora da TLOF
         biruta_x, biruta_y = -12.5, -12.5
         ax.plot([biruta_x, biruta_x], [biruta_y, biruta_y + 3.0], color='black', linewidth=1.5)
         biruta_cone = patches.Polygon([[biruta_x, biruta_y + 3.0], [biruta_x + 3.0, biruta_y + 2.2], [biruta_x + 3.0, biruta_y + 0.8]], color='#DD6B20')
         ax.add_patch(biruta_cone)
         ax.text(biruta_x + 1.5, biruta_y + 4.0, 'BIRUTA', fontsize=5, fontweight='bold', color='white', ha='center', bbox=dict(boxstyle="square,pad=0.15", facecolor="#1A365D", edgecolor="white"))
-
-        tri_dist = tamanho_tlof_m / 2.0 * 0.75
-        tri_x = tri_dist * math.cos(rad_rumo)
-        tri_y = tri_dist * math.sin(rad_rumo)
-        triangle = patches.RegularPolygon((tri_x, tri_y), numVertices=3, radius=3.0, 
-                                          orientation=rad_rumo - math.pi/2, color='#ECC94B')
-        ax.add_patch(triangle)
 
         rx = 52 * math.cos(rad_rumo)
         ry = 52 * math.sin(rad_rumo)
