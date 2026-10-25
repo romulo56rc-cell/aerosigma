@@ -11,8 +11,8 @@ from streamlit_geolocation import streamlit_geolocation
 st.set_page_config(page_title="Aerosigma - Helipontos", page_icon="🚁", layout="centered")
 
 st.title("🚁 AEROSIGMA Web")
-st.subheader("Gerador Profissional de Heliponto (H e Triângulo Alinhados ao Rumo Magnético)")
-st.write("Planta técnica com triângulo e letra H tracejados, centralizados e orientados ao rumo magnético.")
+st.subheader("Gerador Profissional de Heliponto (Rotação dos Textos Ajustada)")
+st.write("Planta técnica com marcações centrais, biruta e rotação corrigida dos rótulos de peso e dimensão.")
 
 class AerosigmaEngine:
     def __init__(self, lat, lon, alt_m, nome_projeto="Heliponto Aerosigma", peso_kg=5000):
@@ -209,7 +209,6 @@ class AerosigmaEngine:
                                  label=f'TLOF Principal ({tamanho_tlof_m}m)')
         ax.add_patch(tlof)
 
-        # Função de rotação baseada no rumo magnético
         def rot(x, y, ang_deg):
             rad = math.radians(ang_deg)
             c, s = math.cos(rad), math.sin(rad)
@@ -255,11 +254,11 @@ class AerosigmaEngine:
         desenhar_segmento_tracejado(h_seg_dir[0], h_seg_dir[1], rumo_mag)
         desenhar_segmento_tracejado(h_seg_meio[0], h_seg_meio[1], rumo_mag)
 
-        # Indicação de Peso Máximo (5.0t) com fonte menor e posicionada na diagonal inferior esquerda
-        ax.text(-5.0, -3.5, f"{self.peso_kg/1000:.1f}t", color='white', fontsize=6.0, fontweight='bold', ha='center', va='center', bbox=dict(boxstyle="square,pad=0.15", facecolor="#2B6CB0", edgecolor="white"))
+        # Indicação de Peso Máximo (5.0t) rotacionada em 180°
+        ax.text(-5.0, -3.5, f"{self.peso_kg/1000:.1f}t", color='white', fontsize=6.0, fontweight='bold', ha='center', va='center', rotation=180, bbox=dict(boxstyle="square,pad=0.15", facecolor="#2B6CB0", edgecolor="white"))
 
-        # Cota de tamanho "20 m" na borda superior direita
-        ax.text(tamanho_tlof_m/2 - 4.5, tamanho_tlof_m/2 - 2.0, f"{int(tamanho_tlof_m)} m", color='white', fontsize=9, fontweight='bold', ha='center', va='center', bbox=dict(boxstyle="square,pad=0.2", facecolor="#1A365D", edgecolor="white"))
+        # Cota de tamanho "20 m" rotacionada em 180° na borda superior direita
+        ax.text(tamanho_tlof_m/2 - 4.5, tamanho_tlof_m/2 - 2.0, f"{int(tamanho_tlof_m)} m", color='white', fontsize=9, fontweight='bold', ha='center', va='center', rotation=180, bbox=dict(boxstyle="square,pad=0.2", facecolor="#1A365D", edgecolor="white"))
 
         # Duas setas no canto superior esquerdo
         ax.annotate('', xy=(-3.0, 5.0), xytext=(-3.0, 8.0), arrowprops=dict(arrowstyle="->", color="white", lw=2.5))
