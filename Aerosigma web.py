@@ -11,8 +11,8 @@ from streamlit_geolocation import streamlit_geolocation
 st.set_page_config(page_title="Aerosigma - Helipontos", page_icon="🚁", layout="centered")
 
 st.title("🚁 AEROSIGMA Web")
-st.subheader("Gerador Profissional de Helipontos (Padrão Exato da Obra)")
-st.write("Planta técnica sincronizada com a disposição real das setas, cotas e marcações na TLOF.")
+st.subheader("Gerador Profissional de Heliponto (Ajuste Fino de Fontes)")
+st.write("Planta técnica sincronizada com fonte compacta para o peso e cota única de 20m.")
 
 class AerosigmaEngine:
     def __init__(self, lat, lon, alt_m, nome_projeto="Heliponto Aerosigma", peso_kg=5000):
@@ -294,19 +294,18 @@ class AerosigmaEngine:
                                  label=f'TLOF Principal ({tamanho_tlof_m}m)')
         ax.add_patch(tlof)
 
-        # Letra H central perfeitamente visível
+        # Letra H central limpa e legível
         ax.text(0, 0, 'H', color='white', fontsize=32, fontweight='bold', ha='center', va='center')
 
-        # Indicação de Peso Máximo (MTOW) logo acima da letra H
-        ax.text(0, tamanho_tlof_m * 0.20, f"{self.peso_kg/1000:.1f}t", color='white', fontsize=9, fontweight='bold', ha='center', va='center', bbox=dict(boxstyle="square,pad=0.25", facecolor="#2B6CB0", edgecolor="white"))
+        # Indicação de Peso Máximo (MTOW) compactada e com fonte menor, bem perto do H
+        ax.text(0, tamanho_tlof_m * 0.15, f"{self.peso_kg/1000:.1f}t", color='white', fontsize=7.5, fontweight='bold', ha='center', va='center', bbox=dict(boxstyle="square,pad=0.2", facecolor="#2B6CB0", edgecolor="white"))
 
-        # Cotas de tamanho posicionadas de forma limpa nas margens internas
-        ax.text(0, tamanho_tlof_m/2 - 1.8, f"{tamanho_tlof_m} m", color='white', fontsize=9, fontweight='bold', ha='center', va='center', bbox=dict(boxstyle="round,pad=0.2", facecolor="#2B6CB0", edgecolor="white"))
-        ax.text(tamanho_tlof_m/2 - 2.2, 0, f"{tamanho_tlof_m} m", color='white', fontsize=9, fontweight='bold', ha='center', va='center', rotation=90, bbox=dict(boxstyle="round,pad=0.2", facecolor="#2B6CB0", edgecolor="white"))
+        # Cota de tamanho "20 m" na borda superior direita
+        ax.text(tamanho_tlof_m/2 - 4.5, tamanho_tlof_m/2 - 2.0, f"{int(tamanho_tlof_m)} m", color='white', fontsize=9, fontweight='bold', ha='center', va='center', bbox=dict(boxstyle="square,pad=0.2", facecolor="#1A365D", edgecolor="white"))
 
-        # Duas flechas de aproximação EXATAMENTE LADO A LADO no canto superior esquerdo da TLOF (igual à foto real)
-        ax.annotate('', xy=(-3.5, 4.0), xytext=(-3.5, 7.5), arrowprops=dict(arrowstyle="->", color="white", lw=2.5))
-        ax.annotate('', xy=(-7.0, 4.0), xytext=(-7.0, 0.5), arrowprops=dict(arrowstyle="->", color="white", lw=2.5))
+        # Duas setas lado a lado no canto superior esquerdo
+        ax.annotate('', xy=(-3.0, 5.0), xytext=(-3.0, 8.0), arrowprops=dict(arrowstyle="->", color="white", lw=2.5))
+        ax.annotate('', xy=(-6.5, 5.0), xytext=(-6.5, 2.0), arrowprops=dict(arrowstyle="->", color="white", lw=2.5))
 
         # Biruta desenhada DENTRO do quadrado (canto superior esquerdo)
         biruta_x, biruta_y = -tamanho_tlof_m/2 + 2.5, tamanho_tlof_m/2 - 2.5
