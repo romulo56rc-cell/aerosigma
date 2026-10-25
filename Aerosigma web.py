@@ -11,8 +11,8 @@ from streamlit_geolocation import streamlit_geolocation
 st.set_page_config(page_title="Aerosigma - Helipontos", page_icon="🚁", layout="centered")
 
 st.title("🚁 AEROSIGMA Web")
-st.subheader("Gerador Profissional de Heliponto (Ajuste Final de Posições)")
-st.write("Planta técnica com o peso na diagonal inferior do H e biruta no canto inferior.")
+st.subheader("Gerador Profissional de Heliponto (Ajuste Fino Definitivo)")
+st.write("Planta técnica com posicionamento exato da biruta na ponta e do peso na diagonal do H.")
 
 class AerosigmaEngine:
     def __init__(self, lat, lon, alt_m, nome_projeto="Heliponto Aerosigma", peso_kg=5000):
@@ -294,11 +294,11 @@ class AerosigmaEngine:
                                  label=f'TLOF Principal ({tamanho_tlof_m}m)')
         ax.add_patch(tlof)
 
-        # Letra H central
+        # Letra H central perfeitamente visível
         ax.text(0, 0, 'H', color='white', fontsize=32, fontweight='bold', ha='center', va='center')
 
-        # Indicação de Peso Máximo (5.0t) na diagonal inferior em relação ao H (um pouco abaixo e ao lado esquerdo)
-        ax.text(-3.0, -2.2, f"{self.peso_kg/1000:.1f}t", color='white', fontsize=7.5, fontweight='bold', ha='center', va='center', bbox=dict(boxstyle="square,pad=0.2", facecolor="#2B6CB0", edgecolor="white"))
+        # Indicação de Peso Máximo (5.0t) na diagonal inferior esquerda do H (sem tocar na letra H)
+        ax.text(-2.5, -2.5, f"{self.peso_kg/1000:.1f}t", color='white', fontsize=7.5, fontweight='bold', ha='center', va='center', bbox=dict(boxstyle="square,pad=0.2", facecolor="#2B6CB0", edgecolor="white"))
 
         # Cota de tamanho "20 m" na borda superior direita
         ax.text(tamanho_tlof_m/2 - 4.5, tamanho_tlof_m/2 - 2.0, f"{int(tamanho_tlof_m)} m", color='white', fontsize=9, fontweight='bold', ha='center', va='center', bbox=dict(boxstyle="square,pad=0.2", facecolor="#1A365D", edgecolor="white"))
@@ -307,12 +307,13 @@ class AerosigmaEngine:
         ax.annotate('', xy=(-3.0, 5.0), xytext=(-3.0, 8.0), arrowprops=dict(arrowstyle="->", color="white", lw=2.5))
         ax.annotate('', xy=(-6.5, 5.0), xytext=(-6.5, 2.0), arrowprops=dict(arrowstyle="->", color="white", lw=2.5))
 
-        # Biruta posicionada no CANTO INFERIOR, na ponta da linha branca da TLOF (canto inferior esquerdo)
-        biruta_x, biruta_y = -tamanho_tlof_m/2 + 2.5, -tamanho_tlof_m/2 + 2.5
-        ax.plot([biruta_x, biruta_x], [biruta_y, biruta_y + 3.5], color='black', linewidth=1.5)
-        biruta_cone = patches.Polygon([[biruta_x, biruta_y + 3.5], [biruta_x + 3.5, biruta_y + 2.5], [biruta_x + 3.5, biruta_y + 1]], color='#DD6B20')
+        # Biruta posicionada exatamente na ponta do canto inferior esquerdo da TLOF
+        meio_tlof = tamanho_tlof_m / 2.0
+        biruta_x, biruta_y = -meio_tlof + 1.8, -meio_tlof + 1.8
+        ax.plot([biruta_x, biruta_x], [biruta_y, biruta_y + 3.0], color='black', linewidth=1.5)
+        biruta_cone = patches.Polygon([[biruta_x, biruta_y + 3.0], [biruta_x + 3.0, biruta_y + 2.2], [biruta_x + 3.0, biruta_y + 0.8]], color='#DD6B20')
         ax.add_patch(biruta_cone)
-        ax.text(biruta_x + 1.8, biruta_y + 4.8, 'BIRUTA', fontsize=5, fontweight='bold', color='white', ha='center')
+        ax.text(biruta_x + 1.5, biruta_y + 4.2, 'BIRUTA', fontsize=5, fontweight='bold', color='white', ha='center')
 
         tri_dist = tamanho_tlof_m / 2.0 * 0.75
         tri_x = tri_dist * math.cos(rad_rumo)
