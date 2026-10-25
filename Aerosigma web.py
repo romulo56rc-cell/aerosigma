@@ -11,8 +11,8 @@ from streamlit_geolocation import streamlit_geolocation
 st.set_page_config(page_title="Aerosigma - Helipontos", page_icon="🚁", layout="centered")
 
 st.title("🚁 AEROSIGMA Web")
-st.subheader("Gerador Profissional de Heliponto (Versão 100% Definitiva)")
-st.write("Planta técnica com todos os elementos perfeitamente posicionados e legíveis.")
+st.subheader("Gerador Profissional de Heliponto (Ajuste Final da Legibilidade)")
+st.write("Planta técnica com a etiqueta da biruta formatada com caixa de destaque.")
 
 class AerosigmaEngine:
     def __init__(self, lat, lon, alt_m, nome_projeto="Heliponto Aerosigma", peso_kg=5000):
@@ -307,13 +307,12 @@ class AerosigmaEngine:
         ax.annotate('', xy=(-3.0, 5.0), xytext=(-3.0, 8.0), arrowprops=dict(arrowstyle="->", color="white", lw=2.5))
         ax.annotate('', xy=(-6.5, 5.0), xytext=(-6.5, 2.0), arrowprops=dict(arrowstyle="->", color="white", lw=2.5))
 
-        # Biruta posicionada exatamente no local da bolinha branca (canto inferior esquerdo, logo fora da TLOF)
+        # Biruta posicionada exatamente no local da bolinha branca com caixa de destaque (bbox) para máxima visibilidade
         biruta_x, biruta_y = -12.5, -12.5
         ax.plot([biruta_x, biruta_x], [biruta_y, biruta_y + 3.0], color='black', linewidth=1.5)
         biruta_cone = patches.Polygon([[biruta_x, biruta_y + 3.0], [biruta_x + 3.0, biruta_y + 2.2], [biruta_x + 3.0, biruta_y + 0.8]], color='#DD6B20')
         ax.add_patch(biruta_cone)
-        # Cor alterada para 'white' para máxima visibilidade
-        ax.text(biruta_x + 1.5, biruta_y + 4.0, 'BIRUTA', fontsize=5, fontweight='bold', color='white', ha='center')
+        ax.text(biruta_x + 1.5, biruta_y + 4.0, 'BIRUTA', fontsize=5, fontweight='bold', color='white', ha='center', bbox=dict(boxstyle="square,pad=0.15", facecolor="#1A365D", edgecolor="white"))
 
         tri_dist = tamanho_tlof_m / 2.0 * 0.75
         tri_x = tri_dist * math.cos(rad_rumo)
