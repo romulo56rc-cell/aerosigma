@@ -11,8 +11,8 @@ from streamlit_geolocation import streamlit_geolocation
 st.set_page_config(page_title="Aerosigma - Helipontos", page_icon="🚁", layout="centered")
 
 st.title("🚁 AEROSIGMA Web")
-st.subheader("Gerador Profissional de Heliponto (Orientação Magnética Central)")
-st.write("Planta técnica com triângulo e H centralizados e orientados ao rumo magnético.")
+st.subheader("Gerador Profissional de Heliponto (Centralização Perfeita e Orientada)")
+st.write("Planta técnica com triângulo branco e H azul centralizados e orientados ao rumo magnético.")
 
 class AerosigmaEngine:
     def __init__(self, lat, lon, alt_m, nome_projeto="Heliponto Aerosigma", peso_kg=5000):
@@ -292,17 +292,16 @@ class AerosigmaEngine:
                                  label=f'TLOF Principal ({tamanho_tlof_m}m)')
         ax.add_patch(tlof)
 
-        # Rumo magnético para orientação exata do triângulo e do H
         rumo_mag = self.converter_rumo_verdadeiro_para_magnetico(rumo_verdadeiro)
         rad_mag = math.radians(90 - rumo_mag)
 
-        # Triângulo orientador branco centralizado e orientado para o norte/rumo magnético
+        # Triângulo orientador branco perfeitamente centralizado em (0, 0) e orientado ao rumo magnético
         triangle = patches.RegularPolygon((0, 0), numVertices=3, radius=4.5, 
                                           orientation=rad_mag - math.pi/2, color='white')
         ax.add_patch(triangle)
 
-        # Letra H azul perfeitamente centralizada e encaixada dentro do triângulo branco
-        ax.text(0, 0, 'H', color='#1A365D', fontsize=24, fontweight='bold', ha='center', va='center')
+        # Letra H azul perfeitamente centralizada em (0, 0) e orientada ao rumo magnético
+        ax.text(0, 0, 'H', color='#1A365D', fontsize=24, fontweight='bold', ha='center', va='center', rotation=rumo_mag)
 
         # Indicação de Peso Máximo (5.0t) com fonte menor e posicionada na diagonal inferior esquerda
         ax.text(-5.0, -3.5, f"{self.peso_kg/1000:.1f}t", color='white', fontsize=6.0, fontweight='bold', ha='center', va='center', bbox=dict(boxstyle="square,pad=0.15", facecolor="#2B6CB0", edgecolor="white"))
