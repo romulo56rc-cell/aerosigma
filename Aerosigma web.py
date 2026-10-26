@@ -11,8 +11,8 @@ from streamlit_geolocation import streamlit_geolocation
 st.set_page_config(page_title="Aerosigma - Helipontos", page_icon="🚁", layout="centered")
 
 st.title("🚁 AEROSIGMA Web")
-st.subheader("Gerador Profissional de Heliponto (Coordenadas Exatas)")
-st.write("Planta técnica sincronizada com leitura direta das coordenadas manuais.")
+st.subheader("Gerador Profissional de Heliponto (Coordenadas Livres e Exatas)")
+st.write("Planta técnica sincronizada com digitação totalmente livre de coordenadas.")
 
 class AerosigmaEngine:
     def __init__(self, lat, lon, alt_m, nome_projeto="Heliponto Aerosigma", peso_kg=5000):
@@ -305,36 +305,31 @@ class AerosigmaEngine:
 # Interface Web com Streamlit
 st.sidebar.header("⚙️ Parâmetros do Heliponto")
 
-# Definindo as suas coordenadas exatas diretamente como padrão inicial
-if 'lat_val' not in st.session_state:
-    st.session_state.lat_val = -25.233580
-if 'lon_val' not in st.session_state:
-    st.session_state.lon_val = -49.093974
-if 'alt_val' not in st.session_state:
-    st.session_state.alt_val = 928.0
+# Inicialização limpa e independente dos campos de coordenadas
+if 'lat' not in st.session_state:
+    st.session_state.lat = -25.233580
+if 'lon' not in st.session_state:
+    st.session_state.lon = -49.093974
+if 'alt' not in st.session_state:
+    st.session_state.alt = 928.0
 
 st.sidebar.markdown("### 📍 Coordenadas e Localização")
-lat_input = st.sidebar.number_input("Latitude", value=st.session_state.lat_val, format="%.6f", key="lat_field")
-lon_input = st.sidebar.number_input("Longitude", value=st.session_state.lon_val, format="%.6f", key="lon_field")
-alt_input = st.sidebar.number_input("Altitude (metros MSL)", value=st.session_state.alt_val, format="%.1f", key="alt_field")
-
-# Atualização imediata dos valores inseridos
-st.session_state.lat_val = lat_input
-st.session_state.lon_val = lon_input
-st.session_state.alt_val = alt_input
+st.sidebar.number_input("Latitude", format="%.6f", key="lat")
+st.sidebar.number_input("Longitude", format="%.6f", key="lon")
+st.sidebar.number_input("Altitude (metros MSL)", format="%.1f", key="alt")
 
 with st.sidebar.expander("📡 Usar GPS do Aparelho (Opcional)"):
     st.write("Clique abaixo para capturar a posição atual do seu dispositivo:")
     loc = streamlit_geolocation()
     if loc and loc.get('latitude') and loc.get('longitude'):
         if st.button("📌 Aplicar Posição do GPS"):
-            st.session_state.lat_val = float(loc['latitude'])
-            st.session_state.lon_val = float(loc['longitude'])
+            st.session_state.lat = float(loc['latitude'])
+            st.session_state.lon = float(loc['longitude'])
             try:
                 url_elev = f"https://api.open-elevation.com/api/v1/lookup?locations={loc['latitude']},{loc['longitude']}"
                 res = requests.get(url_elev, timeout=3).json()
                 if 'results' in res and len(res['results']) > 0:
-                    st.session_state.alt_val = float(res['results'][0]['elevation'])
+                    st.session_state.alt = float(res['results'][0]['elevation'])
             except:
                 pass
             st.success("Coordenadas do GPS aplicadas com sucesso!")
@@ -363,7 +358,7 @@ tamanho_tlof = opcoes_tamanho[escolha_tamanho_txt]
 rumo = st.sidebar.slider("Rumo de Aproximação (°)", 0.0, 360.0, 140.0, key="rumo_aprox")
 
 if st.button("🚀 Gerar Ficheiros do Heliponto", key="btn_gerar"):
-    engine = AerosigmaEngine(st.session_state.lat_val, st.session_state.lon_val, st.session_state.alt_val, nome_projeto=nome_proj, peso_kg=peso)
+    engine = AerosigmaEngine(st.session_state.lat, st.session_state.lon, st.session_state.alt, nome_projeto=nome_proj, peso_kg=peso)
     fato = engine.gerar_fato_tlof_personalizada(tamanho_tlof)
     tlof_pts = engine.gerar_geometria_tlof_e_marcas(tamanho_tlof)
     cone = engine.gerar_cone_aproximacao_3d(azimute_rampa_deg=rumo)
