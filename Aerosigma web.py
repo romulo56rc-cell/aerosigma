@@ -11,8 +11,8 @@ from streamlit_geolocation import streamlit_geolocation
 st.set_page_config(page_title="Aerosigma - Helipontos", page_icon="🚁", layout="centered")
 
 st.title("🚁 AEROSIGMA Web")
-st.subheader("Gerador Profissional de Heliponto (KML Corrigido e Estável)")
-st.write("Planta técnica sincronizada com correção absoluta no formato do arquivo KML.")
+st.subheader("Gerador Profissional de Heliponto (Sincronização de Coordenadas)")
+st.write("Planta técnica sincronizada com leitura exata dos campos manuais e KML corrigido.")
 
 class AerosigmaEngine:
     def __init__(self, lat, lon, alt_m, nome_projeto="Heliponto Aerosigma", peso_kg=5000):
@@ -224,7 +224,6 @@ class AerosigmaEngine:
             c, s = math.cos(rad), math.sin(rad)
             return x * c - y * s, x * s + y * c
 
-        # Desenho do Triângulo Tracejado Orientador orientado ao rumo magnético
         r_tri = 5.0
         pts_tri_base = []
         for j in range(3):
@@ -241,7 +240,6 @@ class AerosigmaEngine:
             ax.plot([pts_tri[j][0], pts_tri[j+1][0]], [pts_tri[j][1], pts_tri[j+1][1]], 
                     color='white', linewidth=2.0, linestyle=(0, (5, 5)))
 
-        # Desenho da Letra H em traços tracejados orientada ao rumo magnético
         hw, hh = 1.8, 3.0
         h_seg_esq = [(-hw/2, -hh/2), (-hw/2, hh/2)]
         h_seg_dir = [(hw/2, -hh/2), (hw/2, hh/2)]
@@ -264,17 +262,12 @@ class AerosigmaEngine:
         desenhar_segmento_tracejado(h_seg_dir[0], h_seg_dir[1], rumo_mag)
         desenhar_segmento_tracejado(h_seg_meio[0], h_seg_meio[1], rumo_mag)
 
-        # Indicação de Peso Máximo (5.0t) rotacionada em 180°
         ax.text(-5.0, -3.5, f"{self.peso_kg/1000:.1f}t", color='white', fontsize=6.0, fontweight='bold', ha='center', va='center', rotation=180, bbox=dict(boxstyle="square,pad=0.15", facecolor="#2B6CB0", edgecolor="white"))
-
-        # Cota de tamanho "20 m" rotacionada em 180° na borda superior direita
         ax.text(tamanho_tlof_m/2 - 4.5, tamanho_tlof_m/2 - 2.0, f"{int(tamanho_tlof_m)} m", color='white', fontsize=9, fontweight='bold', ha='center', va='center', rotation=180, bbox=dict(boxstyle="square,pad=0.2", facecolor="#1A365D", edgecolor="white"))
 
-        # Duas setas no canto superior esquerdo
         ax.annotate('', xy=(-3.0, 5.0), xytext=(-3.0, 8.0), arrowprops=dict(arrowstyle="->", color="white", lw=2.5))
         ax.annotate('', xy=(-6.5, 5.0), xytext=(-6.5, 2.0), arrowprops=dict(arrowstyle="->", color="white", lw=2.5))
 
-        # Biruta posicionada exatamente no canto inferior esquerdo, logo fora da TLOF
         biruta_x, biruta_y = -12.5, -12.5
         ax.plot([biruta_x, biruta_x], [biruta_y, biruta_y + 3.0], color='black', linewidth=1.5)
         biruta_cone = patches.Polygon([[biruta_x, biruta_y + 3.0], [biruta_x + 3.0, biruta_y + 2.2], [biruta_x + 3.0, biruta_y + 0.8]], color='#DD6B20')
@@ -312,34 +305,36 @@ class AerosigmaEngine:
 # Interface Web com Streamlit
 st.sidebar.header("⚙️ Parâmetros do Heliponto")
 
-if 'lat' not in st.session_state:
-    st.session_state.lat = -25.378215
-if 'lon' not in st.session_state:
-    st.session_state.lon = -49.214915
-if 'alt' not in st.session_state:
-    st.session_state.alt = 938.2
+# Inicialização das variáveis de coordenadas no session_state com as novas coordenadas padrão
+if 'lat_val' not in st.session_state:
+    st.session_state.lat_val = -25.233580
+if 'lon_val' not in st.session_state:
+    st.session_state.lon_val = -49.093974
+if 'alt_val' not in st.session_state:
+    st.session_state.alt_val = 928.0
 
 st.sidebar.markdown("### 📍 Coordenadas e Localização")
-lat = st.sidebar.number_input("Latitude", value=st.session_state.lat, format="%.6f", key="input_lat")
-lon = st.sidebar.number_input("Longitude", value=st.session_state.lon, format="%.6f", key="input_lon")
-alt = st.sidebar.number_input("Altitude (metros MSL)", value=st.session_state.alt, format="%.1f", key="input_alt")
+lat_input = st.sidebar.number_input("Latitude", value=st.session_state.lat_val, format="%.6f", key="lat_field")
+lon_input = st.sidebar.number_input("Longitude", value=st.session_state.lon_val, format="%.6f", key="lon_field")
+alt_input = st.sidebar.number_input("Altitude (metros MSL)", value=st.session_state.alt_val, format="%.1f", key="alt_field")
 
-st.session_state.lat = lat
-st.session_state.lon = lon
-st.session_state.alt = alt
+# Atualizar o session_state com os valores correntes dos campos
+st.session_state.lat_val = lat_input
+st.session_state.lon_val = lon_input
+st.session_state.alt_val = alt_input
 
 with st.sidebar.expander("📡 Usar GPS do Aparelho (Opcional)"):
     st.write("Clique abaixo para capturar a posição atual do seu dispositivo:")
     loc = streamlit_geolocation()
     if loc and loc.get('latitude') and loc.get('longitude'):
         if st.button("📌 Aplicar Posição do GPS"):
-            st.session_state.lat = float(loc['latitude'])
-            st.session_state.lon = float(loc['longitude'])
+            st.session_state.lat_val = float(loc['latitude'])
+            st.session_state.lon_val = float(loc['longitude'])
             try:
                 url_elev = f"https://api.open-elevation.com/api/v1/lookup?locations={loc['latitude']},{loc['longitude']}"
                 res = requests.get(url_elev, timeout=3).json()
                 if 'results' in res and len(res['results']) > 0:
-                    st.session_state.alt = float(res['results'][0]['elevation'])
+                    st.session_state.alt_val = float(res['results'][0]['elevation'])
             except:
                 pass
             st.success("Coordenadas do GPS aplicadas com sucesso!")
@@ -368,7 +363,7 @@ tamanho_tlof = opcoes_tamanho[escolha_tamanho_txt]
 rumo = st.sidebar.slider("Rumo de Aproximação (°)", 0.0, 360.0, 140.0, key="rumo_aprox")
 
 if st.button("🚀 Gerar Ficheiros do Heliponto", key="btn_gerar"):
-    engine = AerosigmaEngine(st.session_state.lat, st.session_state.lon, st.session_state.alt, nome_projeto=nome_proj, peso_kg=peso)
+    engine = AerosigmaEngine(st.session_state.lat_val, st.session_state.lon_val, st.session_state.alt_val, nome_projeto=nome_proj, peso_kg=peso)
     fato = engine.gerar_fato_tlof_personalizada(tamanho_tlof)
     tlof_pts = engine.gerar_geometria_tlof_e_marcas(tamanho_tlof)
     cone = engine.gerar_cone_aproximacao_3d(azimute_rampa_deg=rumo)
