@@ -11,8 +11,8 @@ from streamlit_geolocation import streamlit_geolocation
 st.set_page_config(page_title="Aerosigma - Helipontos", page_icon="🚁", layout="centered")
 
 st.title("🚁 AEROSIGMA Web")
-st.subheader("Gerador Profissional de Heliponto (Rotação dos Textos Ajustada)")
-st.write("Planta técnica com marcações centrais, biruta e rotação corrigida dos rótulos de peso e dimensão.")
+st.subheader("Gerador Profissional de Heliponto (Entrada Manual e GPS Opcional)")
+st.write("Planta técnica sincronizada. Digite as coordenadas livremente ou utilize o GPS do aparelho.")
 
 class AerosigmaEngine:
     def __init__(self, lat, lon, alt_m, nome_projeto="Heliponto Aerosigma", peso_kg=5000):
@@ -165,9 +165,9 @@ class AerosigmaEngine:
       <Polygon>
         <altitudeMode>absolute</altitudeMode>
         <outerBoundaryIs><LinearRing><coordinates>\n"""
-            for p in quad:
-                kml_body += f"              {p[1]},{p[0]},{p[2]}\n"
-            kml_body += """            </coordinates></LinearRing></outerBoundaryIs>
+        for p in quad:
+            kml_body += f"              {p[1]},{p[0]},{p[2]}\n"
+        kml_body += """            </coordinates></LinearRing></outerBoundaryIs>
       </Polygon>
     </Placemark>\n"""
 
@@ -214,7 +214,7 @@ class AerosigmaEngine:
             c, s = math.cos(rad), math.sin(rad)
             return x * c - y * s, x * s + y * c
 
-        # Desenho do Triângulo Tracejado Orientador orientado ao rumo magnético
+        # Desenho do Triângulo Tracejado Orientador
         r_tri = 5.0
         pts_tri_base = []
         for j in range(3):
@@ -231,7 +231,7 @@ class AerosigmaEngine:
             ax.plot([pts_tri[j][0], pts_tri[j+1][0]], [pts_tri[j][1], pts_tri[j+1][1]], 
                     color='white', linewidth=2.0, linestyle=(0, (5, 5)))
 
-        # Desenho da Letra H em traços tracejados orientada ao rumo magnético
+        # Desenho da Letra H em traços tracejados
         hw, hh = 1.8, 3.0
         h_seg_esq = [(-hw/2, -hh/2), (-hw/2, hh/2)]
         h_seg_dir = [(hw/2, -hh/2), (hw/2, hh/2)]
@@ -302,35 +302,43 @@ class AerosigmaEngine:
 # Interface Web com Streamlit
 st.sidebar.header("⚙️ Parâmetros do Heliponto")
 
-st.sidebar.markdown("### 📍 Obter Posição GPS")
-loc = streamlit_geolocation()
+# Inicialização segura do Session State para entradas manuais livres
+if 'lat' not in st.session_state:
+    st.session_state.lat = -25.378215
+if 'lon' not in st.session_state:
+    st.session_state.lon = -49.214915
+if 'alt' not in st.session_state:
+    st.session_state.alt = 938.2
 
-if 'lat_input' not in st.session_state:
-    st.session_state.lat_input = -23.550520
-if 'lon_input' not in st.session_state:
-    st.session_state.lon_input = -46.633308
-if 'alt_input' not in st.session_state:
-    st.session_state.alt_input = 760.0
+st.sidebar.markdown("### 📍 Coordenadas e Localização")
+lat = st.sidebar.number_input("Latitude", value=st.session_state.lat, format="%.6f", key="input_lat")
+lon = st.sidebar.number_input("Longitude", value=st.session_state.lon, format="%.6f", key="input_lon")
+alt = st.sidebar.number_input("Altitude (metros MSL)", value=st.session_state.alt, format="%.1f", key="input_alt")
 
-if loc and loc.get('latitude') and loc.get('longitude'):
-    st.session_state.lat_input = float(loc['latitude'])
-    st.session_state.lon_input = float(loc['longitude'])
-    
-    try:
-        url_elev = f"https://api.open-elevation.com/api/v1/lookup?locations={loc['latitude']},{loc['longitude']}"
-        res = requests.get(url_elev, timeout=3).json()
-        if 'results' in res and len(res['results']) > 0:
-            st.session_state.alt_input = float(res['results'][0]['elevation'])
-    except:
-        pass
+# Atualizar estado interno caso o usuário digite manualmente
+st.session_state.lat = lat
+st.session_state.lon = lon
+st.session_state.alt = alt
 
-    st.sidebar.success("GPS OK! Coordenadas e Altitude atualizadas.")
+# Seção de GPS Opcional (Botão para aplicar se desejar)
+with st.sidebar.expander("📡 Usar GPS do Aparelho (Opcional)"):
+    st.write("Clique abaixo para capturar a posição atual do seu dispositivo:")
+    loc = streamlit_geolocation()
+    if loc and loc.get('latitude') and loc.get('longitude'):
+        if st.button("📌 Aplicar Posição do GPS"):
+            st.session_state.lat = float(loc['latitude'])
+            st.session_state.lon = float(loc['longitude'])
+            try:
+                url_elev = f"https://api.open-elevation.com/api/v1/lookup?locations={loc['latitude']},{loc['longitude']}"
+                res = requests.get(url_elev, timeout=3).json()
+                if 'results' in res and len(res['results']) > 0:
+                    st.session_state.alt = float(res['results'][0]['elevation'])
+            except:
+                pass
+            st.success("Coordenadas do GPS aplicadas com sucesso!")
+            st.rerun()
 
 nome_proj = st.sidebar.text_input("Nome do Projeto", "Heliponto 20m - 5t", key="nome_projeto")
-
-lat = st.sidebar.number_input("Latitude", format="%.6f", key="lat_input")
-lon = st.sidebar.number_input("Longitude", format="%.6f", key="lon_input")
-alt = st.sidebar.number_input("Altitude (metros MSL)", format="%.1f", key="alt_input")
 
 opcoes_peso = {
     "3 Toneladas (3.000 kg)": 3000.0,
@@ -353,7 +361,7 @@ tamanho_tlof = opcoes_tamanho[escolha_tamanho_txt]
 rumo = st.sidebar.slider("Rumo de Aproximação (°)", 0.0, 360.0, 140.0, key="rumo_aprox")
 
 if st.button("🚀 Gerar Ficheiros do Heliponto", key="btn_gerar"):
-    engine = AerosigmaEngine(lat, lon, alt, nome_projeto=nome_proj, peso_kg=peso)
+    engine = AerosigmaEngine(st.session_state.lat, st.session_state.lon, st.session_state.alt, nome_projeto=nome_proj, peso_kg=peso)
     fato = engine.gerar_fato_tlof_personalizada(tamanho_tlof)
     tlof_pts, _, _ = engine.gerar_geometria_tlof_e_marcas(tamanho_tlof, rumo)
     cone = engine.gerar_cone_aproximacao_3d(azimute_rampa_deg=rumo)
