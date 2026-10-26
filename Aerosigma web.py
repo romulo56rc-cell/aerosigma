@@ -11,8 +11,8 @@ from streamlit_geolocation import streamlit_geolocation
 st.set_page_config(page_title="Aerosigma - Helipontos", page_icon="🚁", layout="centered")
 
 st.title("🚁 AEROSIGMA Web")
-st.subheader("Gerador Profissional de Heliponto (Sincronização de Coordenadas)")
-st.write("Planta técnica sincronizada com leitura exata dos campos manuais e KML corrigido.")
+st.subheader("Gerador Profissional de Heliponto (Coordenadas Exatas)")
+st.write("Planta técnica sincronizada com leitura direta das coordenadas manuais.")
 
 class AerosigmaEngine:
     def __init__(self, lat, lon, alt_m, nome_projeto="Heliponto Aerosigma", peso_kg=5000):
@@ -305,7 +305,7 @@ class AerosigmaEngine:
 # Interface Web com Streamlit
 st.sidebar.header("⚙️ Parâmetros do Heliponto")
 
-# Inicialização das variáveis de coordenadas no session_state com as novas coordenadas padrão
+# Definindo as suas coordenadas exatas diretamente como padrão inicial
 if 'lat_val' not in st.session_state:
     st.session_state.lat_val = -25.233580
 if 'lon_val' not in st.session_state:
@@ -318,7 +318,7 @@ lat_input = st.sidebar.number_input("Latitude", value=st.session_state.lat_val, 
 lon_input = st.sidebar.number_input("Longitude", value=st.session_state.lon_val, format="%.6f", key="lon_field")
 alt_input = st.sidebar.number_input("Altitude (metros MSL)", value=st.session_state.alt_val, format="%.1f", key="alt_field")
 
-# Atualizar o session_state com os valores correntes dos campos
+# Atualização imediata dos valores inseridos
 st.session_state.lat_val = lat_input
 st.session_state.lon_val = lon_input
 st.session_state.alt_val = alt_input
