@@ -11,8 +11,8 @@ from streamlit_geolocation import streamlit_geolocation
 st.set_page_config(page_title="Aerosigma - Helipontos", page_icon="🚁", layout="centered")
 
 st.title("🚁 AEROSIGMA Web")
-st.subheader("Gerador Profissional de Heliponto (Entrada Manual e GPS Opcional)")
-st.write("Planta técnica sincronizada. Digite as coordenadas livremente ou utilize o GPS do aparelho.")
+st.subheader("Gerador Profissional de Heliponto (KML Corrigido e Estável)")
+st.write("Planta técnica sincronizada com correção absoluta no formato do arquivo KML.")
 
 class AerosigmaEngine:
     def __init__(self, lat, lon, alt_m, nome_projeto="Heliponto Aerosigma", peso_kg=5000):
@@ -63,7 +63,7 @@ class AerosigmaEngine:
         pontos_fato.append(pontos_fato[0])
         return pontos_fato
 
-    def gerar_geometria_tlof_e_marcas(self, tamanho_tlof_m, rumo_verdadeiro):
+    def gerar_geometria_tlof_e_marcas(self, tamanho_tlof_m):
         meio_tlof = tamanho_tlof_m / 2.0
         cantos_tlof = [
             (-meio_tlof, meio_tlof),
@@ -77,7 +77,7 @@ class AerosigmaEngine:
             p_lon = self.lon + (dx / (111000.0 * math.cos(math.radians(self.lat))))
             pontos_tlof.append((p_lat, p_lon, self.alt_m + 0.1))
         pontos_tlof.append(pontos_tlof[0])
-        return pontos_tlof, [], []
+        return pontos_tlof
 
     def gerar_cone_aproximacao_3d(self, azimute_rampa_deg, comprimento_m=1200, inclinacao_rampa=8.0, abertura_deg=15):
         passos = 10
@@ -112,7 +112,7 @@ class AerosigmaEngine:
         return poligonos_cone
 
     def exportar_kml(self, nome_ficheiro, pontos_fato, pontos_tlof, poligonos_cone, nome_proj):
-        kml_header = f"""<?xml version="1.0" encoding="UTF-8"?>
+        kml_content = f"""<?xml version="1.0" encoding="UTF-8"?>
 <kml xmlns="http://www.opengis.net/kml/2.2">
   <Document>
     <name>{nome_proj}</name>
@@ -124,56 +124,66 @@ class AerosigmaEngine:
       <PolyStyle><color>f05d361a</color><fill>1</fill><outline>1</outline></PolyStyle>
       <LineStyle><color>ffffffff</color><width>2</width></LineStyle>
     </Style>
-"""
-        kml_body = """    <Placemark>
+    <Placemark>
       <name>Área de Segurança FATO</name>
       <styleUrl>#estiloFato</styleUrl>
       <Polygon>
         <altitudeMode>absolute</altitudeMode>
-        <outerBoundaryIs><LinearRing><coordinates>\n"""
+        <outerBoundaryIs>
+          <LinearRing>
+            <coordinates>
+"""
         for p in pontos_fato:
-            kml_body += f"              {p[1]},{p[0]},{p[2]}\n"
-        kml_body += """            </coordinates></LinearRing></outerBoundaryIs>
-      </Polygon>
-    </Placemark>\n"""
+            kml_content += f"              {p[1]},{p[0]},{p[2]}\n"
 
-        kml_body += """    <Placemark>
+        kml_content += """            </coordinates>
+          </LinearRing>
+        </outerBoundaryIs>
+      </Polygon>
+    </Placemark>
+    <Placemark>
       <name>TLOF - Heliponto</name>
       <styleUrl>#estiloTlof</styleUrl>
       <Polygon>
         <altitudeMode>absolute</altitudeMode>
-        <outerBoundaryIs><LinearRing><coordinates>\n"""
+        <outerBoundaryIs>
+          <LinearRing>
+            <coordinates>
+"""
         for p in pontos_tlof:
-            kml_body += f"              {p[1]},{p[0]},{p[2]}\n"
-        kml_body += """            </coordinates></LinearRing></outerBoundaryIs>
+            kml_content += f"              {p[1]},{p[0]},{p[2]}\n"
+
+        kml_content += """            </coordinates>
+          </LinearRing>
+        </outerBoundaryIs>
       </Polygon>
-    </Placemark>\n"""
+    </Placemark>
+"""
 
-        total_secoes = len(poligonos_cone)
         for idx, quad in enumerate(poligonos_cone):
-            opacidade_hex = format(max(20, int(140 - (idx * (100 / total_secoes)))), '02x')
-            estilo_id = f"estiloCone_{idx}"
-            
-            kml_header += f"""    <Style id="{estilo_id}">
-      <PolyStyle><color>{opacidade_hex}00ffff</color><fill>1</fill><outline>1</outline></PolyStyle>
-      <LineStyle><color>ffff00ff</color><width>1</width></LineStyle>
-    </Style>\n"""
-
-            kml_body += f"""    <Placemark>
+            kml_content += f"""    <Placemark>
       <name>Cone de Aproximação - Seção {idx+1}</name>
-      <styleUrl>#{estilo_id}</styleUrl>
       <Polygon>
         <altitudeMode>absolute</altitudeMode>
-        <outerBoundaryIs><LinearRing><coordinates>\n"""
-        for p in quad:
-            kml_body += f"              {p[1]},{p[0]},{p[2]}\n"
-        kml_body += """            </coordinates></LinearRing></outerBoundaryIs>
-      </Polygon>
-    </Placemark>\n"""
+        <outerBoundaryIs>
+          <LinearRing>
+            <coordinates>
+"""
+            for p in quad:
+                kml_content += f"              {p[1]},{p[0]},{p[2]}\n"
 
-        kml_footer = "  </Document>\n</kml>"
-        with open(nome_ficheiro, "w", encoding="utf-8", errors="ignore") as f:
-            f.write(kml_header + kml_body + kml_footer)
+            kml_content += """            </coordinates>
+          </LinearRing>
+        </outerBoundaryIs>
+      </Polygon>
+    </Placemark>
+"""
+
+        kml_content += """  </Document>
+</kml>"""
+
+        with open(nome_ficheiro, "w", encoding="utf-8") as f:
+            f.write(kml_content)
 
     def gerar_planta_pdf(self, nome_arquivo_pdf, tamanho_tlof_m, rumo_verdadeiro):
         decl = self.calcular_declinacao_magnetica()
@@ -214,7 +224,7 @@ class AerosigmaEngine:
             c, s = math.cos(rad), math.sin(rad)
             return x * c - y * s, x * s + y * c
 
-        # Desenho do Triângulo Tracejado Orientador
+        # Desenho do Triângulo Tracejado Orientador orientado ao rumo magnético
         r_tri = 5.0
         pts_tri_base = []
         for j in range(3):
@@ -231,7 +241,7 @@ class AerosigmaEngine:
             ax.plot([pts_tri[j][0], pts_tri[j+1][0]], [pts_tri[j][1], pts_tri[j+1][1]], 
                     color='white', linewidth=2.0, linestyle=(0, (5, 5)))
 
-        # Desenho da Letra H em traços tracejados
+        # Desenho da Letra H em traços tracejados orientada ao rumo magnético
         hw, hh = 1.8, 3.0
         h_seg_esq = [(-hw/2, -hh/2), (-hw/2, hh/2)]
         h_seg_dir = [(hw/2, -hh/2), (hw/2, hh/2)]
@@ -302,7 +312,6 @@ class AerosigmaEngine:
 # Interface Web com Streamlit
 st.sidebar.header("⚙️ Parâmetros do Heliponto")
 
-# Inicialização segura do Session State para entradas manuais livres
 if 'lat' not in st.session_state:
     st.session_state.lat = -25.378215
 if 'lon' not in st.session_state:
@@ -315,12 +324,10 @@ lat = st.sidebar.number_input("Latitude", value=st.session_state.lat, format="%.
 lon = st.sidebar.number_input("Longitude", value=st.session_state.lon, format="%.6f", key="input_lon")
 alt = st.sidebar.number_input("Altitude (metros MSL)", value=st.session_state.alt, format="%.1f", key="input_alt")
 
-# Atualizar estado interno caso o usuário digite manualmente
 st.session_state.lat = lat
 st.session_state.lon = lon
 st.session_state.alt = alt
 
-# Seção de GPS Opcional (Botão para aplicar se desejar)
 with st.sidebar.expander("📡 Usar GPS do Aparelho (Opcional)"):
     st.write("Clique abaixo para capturar a posição atual do seu dispositivo:")
     loc = streamlit_geolocation()
@@ -363,7 +370,7 @@ rumo = st.sidebar.slider("Rumo de Aproximação (°)", 0.0, 360.0, 140.0, key="r
 if st.button("🚀 Gerar Ficheiros do Heliponto", key="btn_gerar"):
     engine = AerosigmaEngine(st.session_state.lat, st.session_state.lon, st.session_state.alt, nome_projeto=nome_proj, peso_kg=peso)
     fato = engine.gerar_fato_tlof_personalizada(tamanho_tlof)
-    tlof_pts, _, _ = engine.gerar_geometria_tlof_e_marcas(tamanho_tlof, rumo)
+    tlof_pts = engine.gerar_geometria_tlof_e_marcas(tamanho_tlof)
     cone = engine.gerar_cone_aproximacao_3d(azimute_rampa_deg=rumo)
     
     nome_kml = f"{nome_proj.replace(' ', '_')}.kml"
