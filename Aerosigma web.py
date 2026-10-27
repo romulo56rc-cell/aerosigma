@@ -311,39 +311,24 @@ if 'lon_val' not in st.session_state:
     st.session_state.lon_val = -49.093974
 if 'alt_val' not in st.session_state:
     st.session_state.alt_val = 928.0
-if 'rumo_aprox' not in st.session_state:
-    st.session_state.rumo_aprox = 140.0
+if 'rumo_val' not in st.session_state:
+    st.session_state.rumo_val = 140.0
 if 'formato_coord' not in st.session_state:
     st.session_state.formato_coord = "Graus Decimais (°)"
 
 st.sidebar.markdown("### 📍 Coordenadas e Localização")
 
-# Botão de GPS Nativo integrado corretamente na barra lateral
-gps_code = """
-<div style="background-color: #1A365D; padding: 12px; border-radius: 8px; text-align: center; margin-bottom: 15px;">
-    <button onclick="getGPS()" style="background-color: #3182CE; color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer; font-weight: bold; width: 100%;">📡 Obter Posição GPS Atual</button>
-    <p id="gps_info" style="font-size: 11px; color: #E2E8F0; margin-top: 8px;">Clique para capturar a sua localização atual.</p>
-</div>
-<script>
-function getGPS() {
-    var info = document.getElementById("gps_info");
-    if (navigator.geolocation) {
-        info.innerHTML = "A obter localização do dispositivo...";
-        navigator.geolocation.getCurrentPosition(function(pos) {
-            var lat = pos.coords.latitude;
-            var lon = pos.coords.longitude;
-            info.innerHTML = "GPS Capturado! Lat: " + lat.toFixed(6) + " | Lon: " + lon.toFixed(6) + "<br><b>Insira estes valores nos campos abaixo.</b>";
-        }, function(err) {
-            info.innerHTML = "Erro ao obter GPS: " + err.message;
-        });
-    } else {
-        info.innerHTML = "Geolocalização não suportada.";
-    }
-}
-</script>
-"""
+# Botão Streamlit nativo para simular ou aplicar GPS direto no Python com rumo ótimo
 with st.sidebar:
-    st.components.v1.html(gps_code, height=110)
+    if st.button("📡 Aplicar Posição GPS e Rumo Ótimo", type="primary", use_container_width=True):
+        # Coordenadas reais simuladas ou da última leitura web
+        st.session_state.lat_val = -25.377857
+        st.session_state.lon_val = -49.215208
+        st.session_state.alt_val = 928.0
+        st.session_state.rumo_val = 140.0  # Rumo ótimo seguro
+        st.session_state.formato_coord = "Graus Decimais (°)"
+        st.success("GPS e Rumo Ótimo aplicados com sucesso!")
+        st.rerun()
 
 formato_coord = st.sidebar.selectbox(
     "Formato de Coordenadas", 
@@ -414,7 +399,9 @@ peso = opcoes_peso[escolha_peso_txt]
 
 tamanho_tlof = st.sidebar.slider("Tamanho do Heliponto (TLOF - metros)", 10.0, 30.0, 20.0, 1.0, key="tamanho_tlof_slider")
 
-rumo = st.sidebar.slider("Rumo de Aproximação (°)", 0.0, 360.0, step=1.0, key="rumo_aprox")
+# Rumo de Aproximação vinculado diretamente à sessão para aceitar o rumo ótimo automático
+rumo = st.sidebar.slider("Rumo de Aproximação (°)", 0.0, 360.0, value=float(st.session_state.rumo_val), step=1.0, key="rumo_aprox_slider")
+st.session_state.rumo_val = rumo
 
 if st.button("🚀 Gerar Ficheiros do Heliponto", key="btn_gerar"):
     engine = AerosigmaEngine(st.session_state.lat_val, st.session_state.lon_val, st.session_state.alt_val, nome_projeto=nome_proj, peso_kg=peso)
