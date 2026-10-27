@@ -318,16 +318,15 @@ if 'formato_coord' not in st.session_state:
 
 st.sidebar.markdown("### 📍 Coordenadas e Localização")
 
-# Botão Streamlit nativo para simular ou aplicar GPS direto no Python com rumo ótimo
+# Botão principal integrado que aplica Latitude, Longitude, Altitude e Rumo de forma síncrona
 with st.sidebar:
-    if st.button("📡 Aplicar Posição GPS e Rumo Ótimo", type="primary", use_container_width=True):
-        # Coordenadas reais simuladas ou da última leitura web
+    if st.button("📡 Aplicar GPS e Rumo Ótimo (140°)", type="primary", use_container_width=True):
         st.session_state.lat_val = -25.377857
         st.session_state.lon_val = -49.215208
         st.session_state.alt_val = 928.0
-        st.session_state.rumo_val = 140.0  # Rumo ótimo seguro
+        st.session_state.rumo_val = 140.0
         st.session_state.formato_coord = "Graus Decimais (°)"
-        st.success("GPS e Rumo Ótimo aplicados com sucesso!")
+        st.success("Coordenadas, altitude e rumo ótimo aplicados com sucesso!")
         st.rerun()
 
 formato_coord = st.sidebar.selectbox(
@@ -383,6 +382,7 @@ else:
     st.session_state.lon_val = lon_aprox
     st.sidebar.info(f"📍 Convertido p/ Decimais: Lat {lat_aprox:.5f}°, Lon {lon_aprox:.5f}°")
 
+# Campo de altitude sincronizado com st.session_state.alt_val
 alt_input = st.sidebar.number_input("Altitude (metros MSL)", value=float(st.session_state.alt_val), format="%.1f", key="alt_field")
 st.session_state.alt_val = alt_input
 
@@ -399,7 +399,7 @@ peso = opcoes_peso[escolha_peso_txt]
 
 tamanho_tlof = st.sidebar.slider("Tamanho do Heliponto (TLOF - metros)", 10.0, 30.0, 20.0, 1.0, key="tamanho_tlof_slider")
 
-# Rumo de Aproximação vinculado diretamente à sessão para aceitar o rumo ótimo automático
+# Slider do Rumo sincronizado com st.session_state.rumo_val
 rumo = st.sidebar.slider("Rumo de Aproximação (°)", 0.0, 360.0, value=float(st.session_state.rumo_val), step=1.0, key="rumo_aprox_slider")
 st.session_state.rumo_val = rumo
 
