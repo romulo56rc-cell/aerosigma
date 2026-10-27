@@ -305,34 +305,20 @@ class AerosigmaEngine:
 # Interface Web com Streamlit
 st.sidebar.header("⚙️ Parâmetros do Heliponto")
 
-# Inicialização segura do session_state
-if 'lat_val' not in st.session_state:
-    st.session_state.lat_val = -25.233580
-if 'lon_val' not in st.session_state:
-    st.session_state.lon_val = -49.093974
-if 'alt_val' not in st.session_state:
-    st.session_state.alt_val = 928.0
-if 'rumo_val' not in st.session_state:
-    st.session_state.rumo_val = 140.0
+# Inicialização segura do session_state principal
 if 'formato_coord' not in st.session_state:
     st.session_state.formato_coord = "Graus Decimais (°)"
 
 st.sidebar.markdown("### 📍 Coordenadas e Localização")
 
-# Botão principal de GPS que define rigorosamente os valores na sessão e limpa a cache dos widgets
+# Botão principal de GPS que altera diretamente os valores das chaves dos widgets do Streamlit
 with st.sidebar:
     if st.button("📡 Aplicar GPS e Rumo Ótimo (140°)", type="primary", use_container_width=True):
-        st.session_state.lat_val = -25.377857
-        st.session_state.lon_val = -49.215208
-        st.session_state.alt_val = 928.0
-        st.session_state.rumo_val = 140.0
+        st.session_state.lat_dec = -25.377857
+        st.session_state.lon_dec = -49.215208
+        st.session_state.alt_field = 928.0
+        st.session_state.rumo_aprox_slider = 140.0
         st.session_state.formato_coord = "Graus Decimais (°)"
-        
-        # Remove as chaves antigas do cache para forçar a atualização imediata na interface
-        for k in ['lat_dec', 'lon_dec', 'alt_field', 'rumo_aprox_slider']:
-            if k in st.session_state:
-                del st.session_state[k]
-        
         st.success("GPS, altitude e rumo aplicados com sucesso!")
         st.rerun()
 
@@ -343,10 +329,10 @@ formato_coord = st.sidebar.selectbox(
 )
 
 if formato_coord == "Graus Decimais (°)":
-    lat_input = st.sidebar.number_input("Latitude", value=float(st.session_state.lat_val), format="%.6f", key="lat_dec")
-    lon_input = st.sidebar.number_input("Longitude", value=float(st.session_state.lon_val), format="%.6f", key="lon_dec")
-    st.session_state.lat_val = lat_input
-    st.session_state.lon_val = lon_input
+    lat_input = st.sidebar.number_input("Latitude", value=-25.233580, format="%.6f", key="lat_dec")
+    lon_input = st.sidebar.number_input("Longitude", value=-49.093974, format="%.6f", key="lon_dec")
+    lat_val = lat_input
+    lon_val = lon_input
 
 elif formato_coord == "Graus, Minutos e Segundos (GMS)":
     st.sidebar.write("Insira os componentes GMS:")
@@ -359,8 +345,8 @@ elif formato_coord == "Graus, Minutos e Segundos (GMS)":
         seg = round(((val - deg) * 60 - minuto) * 60, 2)
         return deg, minuto, seg, neg
 
-    d_lat, m_lat, s_lat, neg_lat = dec_para_gms(st.session_state.lat_val)
-    d_lon, m_lon, s_lon, neg_lon = dec_para_gms(st.session_state.lon_val)
+    d_lat, m_lat, s_lat, neg_lat = dec_para_gms(st.session_state.get('lat_dec', -25.233580))
+    d_lon, m_lon, s_lon, neg_lon = dec_para_gms(st.session_state.get('lon_dec', -49.093974))
 
     col1, col2, col3 = st.sidebar.columns(3)
     g_lat = col1.number_input("Lat Graus", value=d_lat, step=1, key="g_lat")
@@ -374,8 +360,8 @@ elif formato_coord == "Graus, Minutos e Segundos (GMS)":
 
     lat_sinal = -1 if neg_lat else 1
     lon_sinal = -1 if neg_lon else 1
-    st.session_state.lat_val = lat_sinal * (abs(g_lat) + mi_lat/60.0 + s_lat_in/3600.0)
-    st.session_state.lon_val = lon_sinal * (abs(g_lon) + mi_lon/60.0 + s_lon_in/3600.0)
+    lat_val = lat_sinal * (abs(g_lat) + mi_lat/60.0 + s_lat_in/3600.0)
+    lon_val = lon_sinal * (abs(g_lon) + mi_lon/60.0 + s_lon_in/3600.0)
 
 else:
     st.sidebar.write("Insira os dados UTM / SGRC (Metros):")
@@ -383,15 +369,12 @@ else:
     northing = st.sidebar.number_input("Northing (Y - metros)", value=7205000.0, format="%.2f", key="utm_n")
     fuso = st.sidebar.number_input("Fuso UTM (Ex: 22 ou 23)", value=22, step=1, key="utm_fuso")
     
-    lat_aprox = -25.0 + (7205000.0 - northing) / 111000.0
-    lon_aprox = -49.0 - (675000.0 - easting) / 100000.0
-    st.session_state.lat_val = lat_aprox
-    st.session_state.lon_val = lon_aprox
-    st.sidebar.info(f"📍 Convertido p/ Decimais: Lat {lat_aprox:.5f}°, Lon {lon_aprox:.5f}°")
+    lat_val = -25.0 + (7205000.0 - northing) / 111000.0
+    lon_val = -49.0 - (675000.0 - easting) / 100000.0
+    st.sidebar.info(f"📍 Convertido p/ Decimais: Lat {lat_val:.5f}°, Lon {lon_val:.5f}°")
 
-# Campo da Altitude ligado rigorosamente ao session_state
-alt_input = st.sidebar.number_input("Altitude (metros MSL)", value=float(st.session_state.alt_val), format="%.1f", key="alt_field")
-st.session_state.alt_val = alt_input
+# Campo da Altitude ligado diretamente à chave do widget
+alt_input = st.sidebar.number_input("Altitude (metros MSL)", value=928.0, format="%.1f", key="alt_field")
 
 nome_proj = st.sidebar.text_input("Nome do Projeto", "Heliponto 20m - 5t", key="nome_projeto")
 
@@ -406,12 +389,11 @@ peso = opcoes_peso[escolha_peso_txt]
 
 tamanho_tlof = st.sidebar.slider("Tamanho do Heliponto (TLOF - metros)", 10.0, 30.0, 20.0, 1.0, key="tamanho_tlof_slider")
 
-# Slider do Rumo ligado rigorosamente ao session_state
-rumo = st.sidebar.slider("Rumo de Aproximação (°)", 0.0, 360.0, value=float(st.session_state.rumo_val), step=1.0, key="rumo_aprox_slider")
-st.session_state.rumo_val = rumo
+# Slider do Rumo ligado diretamente à chave do widget
+rumo = st.sidebar.slider("Rumo de Aproximação (°)", 0.0, 360.0, value=140.0, step=1.0, key="rumo_aprox_slider")
 
 if st.button("🚀 Gerar Ficheiros do Heliponto", key="btn_gerar"):
-    engine = AerosigmaEngine(st.session_state.lat_val, st.session_state.lon_val, st.session_state.alt_val, nome_projeto=nome_proj, peso_kg=peso)
+    engine = AerosigmaEngine(lat_val, lon_val, alt_input, nome_projeto=nome_proj, peso_kg=peso)
     fato = engine.gerar_fato_tlof_personalizada(tamanho_tlof)
     tlof_pts = engine.gerar_geometria_tlof_e_marcas(tamanho_tlof)
     cone = engine.gerar_cone_aproximacao_3d(azimute_rampa_deg=rumo)
