@@ -11,7 +11,7 @@ st.set_page_config(page_title="Aerosigma - Helipontos", page_icon="🚁", layout
 
 st.title("🚁 AEROSIGMA Web")
 st.subheader("Gerador Profissional de Heliponto (UTM, SGRC, GPS & Rampa 12,5%)")
-st.write("Planta técnica avançada com suporte a UTM, SGRC/SIRGAS2000, Decimais, GMS, Rampa 12,5% e GPS.")
+st.write("Planta técnica avançada com suporte a UTM, SGRC/SIRGAS2000, Decimais, GMS, Rampa 12,5% e GPS integrado.")
 
 class AerosigmaEngine:
     def __init__(self, lat, lon, alt_m, nome_projeto="Heliponto Aerosigma", peso_kg=5000):
@@ -318,8 +318,31 @@ if 'formato_coord' not in st.session_state:
 
 st.sidebar.markdown("### 📍 Coordenadas e Localização")
 
-# Abordagem interativa limpa para inserção rápida ou simulação GPS direto nos campos livres
-st.sidebar.info("💡 Dica: Insira livremente as coordenadas ou utilize os campos abaixo.")
+# Botão de GPS Nativo posicionado na barra lateral
+gps_code = """
+<div style="background-color: #1A365D; padding: 12px; border-radius: 8px; text-align: center; margin-bottom: 15px;">
+    <button onclick="getGPS()" style="background-color: #3182CE; color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer; font-weight: bold; width: 100%;">📡 Obter Posição GPS Atual</button>
+    <p id="gps_info" style="font-size: 11px; color: #E2E8F0; margin-top: 8px;">Clique para capturar a sua localização atual.</p>
+</div>
+<script>
+function getGPS() {
+    var info = document.getElementById("gps_info");
+    if (navigator.geolocation) {
+        info.innerHTML = "A obter localização do dispositivo...";
+        navigator.geolocation.getCurrentPosition(function(pos) {
+            var lat = pos.coords.latitude;
+            var lon = pos.coords.longitude;
+            info.innerHTML = "GPS Capturado! Lat: " + lat.toFixed(6) + " | Lon: " + lon.toFixed(6) + "<br><b>Atualize a página ou insira nos campos abaixo.</b>";
+        }, function(err) {
+            info.innerHTML = "Erro ao obter GPS: " + err.message;
+        });
+    } else {
+        info.innerHTML = "Geolocalização não suportada.";
+    }
+}
+</script>
+"""
+st.sidebar.components.v1.html(gps_code, height=110)
 
 formato_coord = st.sidebar.selectbox(
     "Formato de Coordenadas", 
