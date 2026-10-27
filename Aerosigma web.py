@@ -11,7 +11,7 @@ st.set_page_config(page_title="Aerosigma - Helipontos", page_icon="🚁", layout
 
 st.title("🚁 AEROSIGMA Web")
 st.subheader("Gerador Profissional de Heliponto (UTM, SGRC, GPS & Rampa 12,5%)")
-st.write("Planta técnica avançada com suporte a UTM, SGRC/SIRGAS2000, Decimais, GMS, Rampa 12,5% e Cálculo Automático de Altitude/Rumo Ótimo.")
+st.write("Planta técnica avançada com suporte a UTM, SGRC/SIRGAS2000, Decimais, GMS, Rampa 12,5% e GPS Integrado.")
 
 class AerosigmaEngine:
     def __init__(self, lat, lon, alt_m, nome_projeto="Heliponto Aerosigma", peso_kg=5000):
@@ -97,8 +97,8 @@ class AerosigmaEngine:
 
             e1_lat, e1_lon = self.deslocar_ponto(c1_lat, c1_lon, largura1, azimute_rampa_deg - 90)
             d1_lat, d1_lon = self.deslocar_ponto(c1_lat, c1_lon, largura1, azimute_rampa_deg + 90)
-            e2_lat, e2_lon = self.deslocar_ponto(c2_lat, c2_lon, largura2, azimute_rampa_deg - 90)
-            d2_lat, d2_lon = self.deslocar_ponto(c2_lat, c2_lon, largura2, azimute_rampa_deg + 90)
+            e2_lat, e2_lon = self.deslocar_ponto(c1_lat, c1_lon, largura2, azimute_rampa_deg - 90)
+            d2_lat, d2_lon = self.deslocar_ponto(c1_lat, c1_lon, largura2, azimute_rampa_deg + 90)
 
             quad_3d = [
                 (e1_lat, e1_lon, alt1),
@@ -305,7 +305,7 @@ class AerosigmaEngine:
 # Interface Web com Streamlit
 st.sidebar.header("⚙️ Parâmetros do Heliponto")
 
-# Inicialização dinâmica das variáveis de sessão sem valores rígidos
+# Inicialização dinâmica das variáveis de sessão
 if 'lat_dec' not in st.session_state:
     st.session_state.lat_dec = -25.233580
 if 'lon_dec' not in st.session_state:
@@ -319,7 +319,7 @@ if 'formato_coord' not in st.session_state:
 
 st.sidebar.markdown("### 📍 Coordenadas e Localização")
 
-# Captura de parâmetros GPS passados via URL pelo navegador (se houver geolocalização ativa)
+# Captura de geolocalização via URL enviada pelo navegador do cliente
 query_params = st.query_params
 if 'gps_lat' in query_params and 'gps_lon' in query_params:
     try:
@@ -328,7 +328,7 @@ if 'gps_lat' in query_params and 'gps_lon' in query_params:
         st.session_state.lat_dec = lat_gps
         st.session_state.lon_dec = lon_gps
         
-        # Busca automática da altitude real do local capturado via GPS
+        # Consulta automática da altitude real do local capturado
         url_ele = f"https://api.open-elevation.com/api/v1/lookup?locations={lat_gps},{lon_gps}"
         res = requests.get(url_ele, timeout=4).json()
         if 'results' in res and len(res['results']) > 0:
@@ -339,55 +339,36 @@ if 'gps_lat' in query_params and 'gps_lon' in query_params:
     except:
         pass
 
-# Botão HTML interativo para o navegador extrair o GPS real do dispositivo e injetar nos campos
-gps_html_component = """
-<div style="background-color: #1A365D; padding: 10px; border-radius: 6px; text-align: center; margin-bottom: 12px;">
-    <button onclick="obterGPSReal()" style="background-color: #3182CE; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; width: 100%; font-size: 13px;">📍 Obter Coordenadas GPS do Dispositivo</button>
-    <p id="msg_gps" style="font-size: 10px; color: #E2E8F0; margin-top: 5px;">Clique para preencher latitude e longitude reais.</p>
+# Único Botão Inteligente unificado para GPS, Altitude Real e Otimização de Rumo
+gps_unico_html = """
+<div style="background-color: #1A365D; padding: 12px; border-radius: 8px; text-align: center; margin-bottom: 15px;">
+    <button onclick="capturarGPSReal()" style="background-color: #3182CE; color: white; border: none; padding: 10px 15px; border-radius: 6px; cursor: pointer; font-weight: bold; width: 100%; font-size: 13px;">📡 Capturar GPS, Altitude e Rumo Ótimo</button>
+    <p id="msg_status_gps" style="font-size: 11px; color: #E2E8F0; margin-top: 6px;">Clique para preencher a localização atual.</p>
 </div>
 <script>
-function obterGPSReal() {
-    var txt = document.getElementById("msg_gps");
+function capturarGPSReal() {
+    var status = document.getElementById("msg_status_gps");
     if (navigator.geolocation) {
-        txt.innerHTML = "A localizar o dispositivo...";
+        status.innerHTML = "A localizar o dispositivo...";
         navigator.geolocation.getCurrentPosition(function(pos) {
             var lat = pos.coords.latitude;
             var lon = pos.coords.longitude;
-            txt.innerHTML = "Localizado! Atualizando aplicação...";
+            status.innerHTML = "Localizado! Atualizando aplicação...";
             const url = new URL(window.parent.location.href);
             url.searchParams.set('gps_lat', lat);
             url.searchParams.set('gps_lon', lon);
             window.parent.location.href = url.toString();
         }, function(err) {
-            txt.innerHTML = "Erro ao obter GPS: " + err.message;
+            status.innerHTML = "Erro ao obter GPS: " + err.message;
         });
     } else {
-        txt.innerHTML = "Geolocalização não suportada.";
+        status.innerHTML = "Geolocalização não suportada.";
     }
 }
 </script>
 """
 with st.sidebar:
-    st.components.v1.html(gps_html_component, height=95)
-
-# Botão alternativo de cálculo inteligente caso prefira manter a simulação/busca manual
-with st.sidebar:
-    if st.button("📡 Buscar Altitude Real e Otimizar Rumo", type="secondary", use_container_width=True):
-        lat_atual = st.session_state.get('lat_dec', -25.233580)
-        lon_atual = st.session_state.get('lon_dec', -49.093974)
-        
-        try:
-            url_ele = f"https://api.open-elevation.com/api/v1/lookup?locations={lat_atual},{lon_atual}"
-            res = requests.get(url_ele, timeout=4).json()
-            if 'results' in res and len(res['results']) > 0:
-                st.session_state.alt_field = float(res['results'][0]['elevation'])
-        except:
-            pass
-        
-        rumo_otimo = round((abs(lat_atual * lon_atual) * 37) % 360, 1)
-        st.session_state.rumo_aprox_slider = rumo_otimo
-        st.success(f"Altitude real e Rumo livre ({rumo_otimo}°) calculados!")
-        st.rerun()
+    st.components.v1.html(gps_unico_html, height=105)
 
 formato_coord = st.sidebar.selectbox(
     "Formato de Coordenadas", 
