@@ -5,13 +5,12 @@ from matplotlib.backends.backend_pdf import PdfPages
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 import numpy as np
-from streamlit_geolocation import streamlit_geolocation
 
 # Configuração da Página Web
 st.set_page_config(page_title="Aerosigma - Helipontos", page_icon="🚁", layout="centered")
 
 st.title("🚁 AEROSIGMA Web")
-st.subheader("Gerador Profissional de Heliponto (UTM, SGRC, GPS & Rampa 12,5%)")
+st.subheader("Gerador Profissional de Heliponto (UTM, SGRC, Coordenadas & Rampa 12,5%)")
 st.write("Planta técnica avançada com suporte a UTM, SGRC/SIRGAS2000, Decimais, GMS e Rampa 12,5%.")
 
 class AerosigmaEngine:
@@ -318,25 +317,6 @@ if 'formato_coord' not in st.session_state:
     st.session_state.formato_coord = "Graus Decimais (°)"
 
 st.sidebar.markdown("### 📍 Coordenadas e Localização")
-
-with st.sidebar.expander("📡 Usar GPS do Aparelho (Opcional)", expanded=False):
-    st.write("Clique abaixo para capturar a posição atual do seu dispositivo:")
-    loc = streamlit_geolocation(key="gps_sensor_unico")
-    if loc and loc.get('latitude') and loc.get('longitude'):
-        if st.button("📌 Aplicar Posição do GPS", key="btn_aplica_gps"):
-            st.session_state.lat_val = float(loc['latitude'])
-            st.session_state.lon_val = float(loc['longitude'])
-            st.session_state.rumo_aprox = 140.0
-            st.session_state.formato_coord = "Graus Decimais (°)"
-            try:
-                url_elev = f"https://api.open-elevation.com/api/v1/lookup?locations={loc['latitude']},{loc['longitude']}"
-                res = requests.get(url_elev, timeout=3).json()
-                if 'results' in res and len(res['results']) > 0:
-                    st.session_state.alt_val = float(res['results'][0]['elevation'])
-            except:
-                pass
-            st.success("GPS aplicado com sucesso!")
-            st.rerun()
 
 formato_coord = st.sidebar.selectbox(
     "Formato de Coordenadas", 
