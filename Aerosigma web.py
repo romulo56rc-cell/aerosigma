@@ -311,8 +311,8 @@ if 'lon_val' not in st.session_state:
     st.session_state.lon_val = -49.093974
 if 'alt_val' not in st.session_state:
     st.session_state.alt_val = 928.0
-if 'rumo_val' not in st.session_state:
-    st.session_state.rumo_val = 140.0
+if 'rumo_aprox' not in st.session_state:
+    st.session_state.rumo_aprox = 140.0
 if 'formato_coord' not in st.session_state:
     st.session_state.formato_coord = "Graus Decimais (°)"
 
@@ -325,7 +325,7 @@ with st.sidebar.expander("📡 Usar GPS do Aparelho (Opcional)", expanded=False)
         if st.button("📌 Aplicar Posição do GPS"):
             st.session_state.lat_val = float(loc['latitude'])
             st.session_state.lon_val = float(loc['longitude'])
-            st.session_state.rumo_val = 140.0  # Rumo ótimo automático aplicado diretamente ao estado
+            st.session_state.rumo_aprox = 140.0  # Rumo ótimo padrão configurado diretamente na chave do slider
             st.session_state.formato_coord = "Graus Decimais (°)"
             try:
                 url_elev = f"https://api.open-elevation.com/api/v1/lookup?locations={loc['latitude']},{loc['longitude']}"
@@ -334,7 +334,7 @@ with st.sidebar.expander("📡 Usar GPS do Aparelho (Opcional)", expanded=False)
                     st.session_state.alt_val = float(res['results'][0]['elevation'])
             except:
                 pass
-            st.success("GPS aplicado com coordenadas, altitude e rumo otimizado!")
+            st.success("GPS aplicado com coordenadas, altitude e rumo ótimo de 140°!")
             st.rerun()
 
 formato_coord = st.sidebar.selectbox("Formato de Coordenadas", ["Graus Decimais (°)", "Graus, Minutos e Segundos (GMS)"], key="formato_coord")
@@ -390,9 +390,8 @@ peso = opcoes_peso[escolha_peso_txt]
 # Slider ajustável de 10 metros até 30 metros para a TLOF
 tamanho_tlof = st.sidebar.slider("Tamanho do Heliponto (TLOF - metros)", 10.0, 30.0, 20.0, 1.0, key="tamanho_tlof_slider")
 
-# Slider do Rumo vinculado ao estado da sessão para atualizar automaticamente com o GPS
-rumo = st.sidebar.slider("Rumo de Aproximação (°)", 0.0, 360.0, value=float(st.session_state.rumo_val), key="rumo_aprox")
-st.session_state.rumo_val = rumo
+# Slider do Rumo ligado diretamente à chave st.session_state.rumo_aprox
+rumo = st.sidebar.slider("Rumo de Aproximação (°)", 0.0, 360.0, step=1.0, key="rumo_aprox")
 
 if st.button("🚀 Gerar Ficheiros do Heliponto", key="btn_gerar"):
     engine = AerosigmaEngine(st.session_state.lat_val, st.session_state.lon_val, st.session_state.alt_val, nome_projeto=nome_proj, peso_kg=peso)
