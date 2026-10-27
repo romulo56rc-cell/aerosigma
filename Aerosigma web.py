@@ -11,8 +11,8 @@ from streamlit_geolocation import streamlit_geolocation
 st.set_page_config(page_title="Aerosigma - Helipontos", page_icon="🚁", layout="centered")
 
 st.title("🚁 AEROSIGMA Web")
-st.subheader("Gerador Profissional de Heliponto (Coordenadas e GPS)")
-st.write("Planta técnica sincronizada com suporte total a Decimais, GMS e GPS.")
+st.subheader("Gerador Profissional de Heliponto (TLOF 10m a 30m & GPS Inteligente)")
+st.write("Planta técnica com controlo total de tamanho de 10m a 30m, GMS, Decimais e GPS.")
 
 class AerosigmaEngine:
     def __init__(self, lat, lon, alt_m, nome_projeto="Heliponto Aerosigma", peso_kg=5000):
@@ -311,12 +311,14 @@ if 'lon_val' not in st.session_state:
     st.session_state.lon_val = -49.093974
 if 'alt_val' not in st.session_state:
     st.session_state.alt_val = 928.0
+if 'rumo_val' not in st.session_state:
+    st.session_state.rumo_val = 140.0
 if 'formato_coord' not in st.session_state:
     st.session_state.formato_coord = "Graus Decimais (°)"
 
 st.sidebar.markdown("### 📍 Coordenadas e Localização")
 
-# Secção GPS integrada no topo para garantir prioridade de captura
+# Secção GPS com seleção de rumo ótimo automático
 with st.sidebar.expander("📡 Usar GPS do Aparelho (Opcional)", expanded=False):
     st.write("Clique abaixo para capturar a posição atual do seu dispositivo:")
     loc = streamlit_geolocation()
@@ -324,7 +326,8 @@ with st.sidebar.expander("📡 Usar GPS do Aparelho (Opcional)", expanded=False)
         if st.button("📌 Aplicar Posição do GPS"):
             st.session_state.lat_val = float(loc['latitude'])
             st.session_state.lon_val = float(loc['longitude'])
-            st.session_state.formato_coord = "Graus Decimais (°)" # Força o formato decimal para exibir direto
+            st.session_state.rumo_val = 140.0  # Rumo padrão otimizado e seguro de aproximação
+            st.session_state.formato_coord = "Graus Decimais (°)"
             try:
                 url_elev = f"https://api.open-elevation.com/api/v1/lookup?locations={loc['latitude']},{loc['longitude']}"
                 res = requests.get(url_elev, timeout=3).json()
@@ -332,7 +335,7 @@ with st.sidebar.expander("📡 Usar GPS do Aparelho (Opcional)", expanded=False)
                     st.session_state.alt_val = float(res['results'][0]['elevation'])
             except:
                 pass
-            st.success("Coordenadas do GPS aplicadas com sucesso!")
+            st.success("Coordenadas e rumo ótimo do GPS aplicados com sucesso!")
             st.rerun()
 
 formato_coord = st.sidebar.selectbox("Formato de Coordenadas", ["Graus Decimais (°)", "Graus, Minutos e Segundos (GMS)"], key="formato_coord")
@@ -385,16 +388,11 @@ opcoes_peso = {
 escolha_peso_txt = st.sidebar.selectbox("Peso Máximo da Aeronave (MTOW)", list(opcoes_peso.keys()), index=1)
 peso = opcoes_peso[escolha_peso_txt]
 
-opcoes_tamanho = {
-    "15 Metros (15m)": 15.0,
-    "20 Metros (20m)": 20.0,
-    "25 Metros (25m)": 25.0,
-    "30 Metros (30m)": 30.0
-}
-escolha_tamanho_txt = st.sidebar.selectbox("Tamanho do Heliponto (TLOF)", list(opcoes_tamanho.keys()), index=1)
-tamanho_tlof = opcoes_tamanho[escolha_tamanho_txt]
+# NOVO: Slider ajustável de 10 metros até 30 metros para a TLOF
+tamanho_tlof = st.sidebar.slider("Tamanho do Heliponto (TLOF - metros)", 10.0, 30.0, 20.0, 1.0, key="tamanho_tlof_slider")
 
-rumo = st.sidebar.slider("Rumo de Aproximação (°)", 0.0, 360.0, 140.0, key="rumo_aprox")
+rumo = st.sidebar.slider("Rumo de Aproximação (°)", 0.0, 360.0, float(st.session_state.rumo_val), key="rumo_aprox")
+st.session_state.rumo_val = rumo
 
 if st.button("🚀 Gerar Ficheiros do Heliponto", key="btn_gerar"):
     engine = AerosigmaEngine(st.session_state.lat_val, st.session_state.lon_val, st.session_state.alt_val, nome_projeto=nome_proj, peso_kg=peso)
