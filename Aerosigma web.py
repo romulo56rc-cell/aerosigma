@@ -318,7 +318,7 @@ if 'formato_coord' not in st.session_state:
 
 st.sidebar.markdown("### 📍 Coordenadas e Localização")
 
-# Botão de GPS Nativo posicionado na barra lateral
+# Botão de GPS Nativo integrado corretamente na barra lateral
 gps_code = """
 <div style="background-color: #1A365D; padding: 12px; border-radius: 8px; text-align: center; margin-bottom: 15px;">
     <button onclick="getGPS()" style="background-color: #3182CE; color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer; font-weight: bold; width: 100%;">📡 Obter Posição GPS Atual</button>
@@ -332,7 +332,7 @@ function getGPS() {
         navigator.geolocation.getCurrentPosition(function(pos) {
             var lat = pos.coords.latitude;
             var lon = pos.coords.longitude;
-            info.innerHTML = "GPS Capturado! Lat: " + lat.toFixed(6) + " | Lon: " + lon.toFixed(6) + "<br><b>Atualize a página ou insira nos campos abaixo.</b>";
+            info.innerHTML = "GPS Capturado! Lat: " + lat.toFixed(6) + " | Lon: " + lon.toFixed(6) + "<br><b>Insira estes valores nos campos abaixo.</b>";
         }, function(err) {
             info.innerHTML = "Erro ao obter GPS: " + err.message;
         });
@@ -342,7 +342,8 @@ function getGPS() {
 }
 </script>
 """
-st.sidebar.components.v1.html(gps_code, height=110)
+with st.sidebar:
+    st.components.v1.html(gps_code, height=110)
 
 formato_coord = st.sidebar.selectbox(
     "Formato de Coordenadas", 
