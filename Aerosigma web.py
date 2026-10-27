@@ -11,8 +11,8 @@ from streamlit_geolocation import streamlit_geolocation
 st.set_page_config(page_title="Aerosigma - Helipontos", page_icon="🚁", layout="centered")
 
 st.title("🚁 AEROSIGMA Web")
-st.subheader("Gerador Profissional de Heliponto (Coordenadas Livres e GPS)")
-st.write("Planta técnica sincronizada com digitação livre e suporte a GPS.")
+st.subheader("Gerador Profissional de Heliponto (Coordenadas Decimais ou GMS)")
+st.write("Planta técnica com suporte a Coordenadas Decimais, Graus/Minutos/Segundos e GPS.")
 
 class AerosigmaEngine:
     def __init__(self, lat, lon, alt_m, nome_projeto="Heliponto Aerosigma", peso_kg=5000):
@@ -305,7 +305,9 @@ class AerosigmaEngine:
 # Interface Web com Streamlit
 st.sidebar.header("⚙️ Parâmetros do Heliponto")
 
-# Variáveis de estado separadas para gerir valores manuais ou via GPS
+# Escolha do formato de coordenadas
+formato_coord = st.sidebar.selectbox("Formato de Coordenadas", ["Graus Decimais (°)", "Graus, Minutos e Segundos (GMS)"])
+
 if 'lat_val' not in st.session_state:
     st.session_state.lat_val = -25.233580
 if 'lon_val' not in st.session_state:
@@ -314,13 +316,44 @@ if 'alt_val' not in st.session_state:
     st.session_state.alt_val = 928.0
 
 st.sidebar.markdown("### 📍 Coordenadas e Localização")
-lat_input = st.sidebar.number_input("Latitude", value=st.session_state.lat_val, format="%.6f", key="lat_field")
-lon_input = st.sidebar.number_input("Longitude", value=st.session_state.lon_val, format="%.6f", key="lon_field")
-alt_input = st.sidebar.number_input("Altitude (metros MSL)", value=st.session_state.alt_val, format="%.1f", key="alt_field")
 
-# Sincronização dos campos manuais
-st.session_state.lat_val = lat_input
-st.session_state.lon_val = lon_input
+if formato_coord == "Graus Decimais (°)":
+    lat_input = st.sidebar.number_input("Latitude", value=float(st.session_state.lat_val), format="%.6f", key="lat_dec")
+    lon_input = st.sidebar.number_input("Longitude", value=float(st.session_state.lon_val), format="%.6f", key="lon_dec")
+    st.session_state.lat_val = lat_input
+    st.session_state.lon_val = lon_input
+else:
+    st.sidebar.write("Insira os componentes GMS:")
+    
+    # Conversor auxiliar para valores iniciais aproximados
+    def dec_para_gms(val):
+        neg = val < 0
+        val = abs(val)
+        deg = int(val)
+        minuto = int((val - deg) * 60)
+        seg = round(((val - deg) * 60 - minuto) * 60, 2)
+        return deg, minuto, seg, neg
+
+    d_lat, m_lat, s_lat, neg_lat = dec_para_gms(st.session_state.lat_val)
+    d_lon, m_lon, s_lon, neg_lon = dec_para_gms(st.session_state.lon_val)
+
+    col1, col2, col3 = st.sidebar.columns(3)
+    g_lat = col1.number_input("Lat Graus", value=d_lat, step=1, key="g_lat")
+    mi_lat = col2.number_input("Min", value=m_lat, step=1, key="mi_lat")
+    s_lat_in = col3.number_input("Seg", value=s_lat, format="%.2f", key="s_lat")
+
+    col4, col5, col6 = st.sidebar.columns(3)
+    g_lon = col4.number_input("Lon Graus", value=d_lon, step=1, key="g_lon")
+    mi_lon = col5.number_input("Min", value=m_lon, step=1, key="mi_lon")
+    s_lon_in = col6.number_input("Seg", value=s_lon, format="%.2f", key="s_lon")
+
+    # Converter GMS para Decimal
+    lat_sinal = -1 if neg_lat else 1
+    lon_sinal = -1 if neg_lon else 1
+    st.session_state.lat_val = lat_sinal * (abs(g_lat) + mi_lat/60.0 + s_lat_in/3600.0)
+    st.session_state.lon_val = lon_sinal * (abs(g_lon) + mi_lon/60.0 + s_lon_in/3600.0)
+
+alt_input = st.sidebar.number_input("Altitude (metros MSL)", value=float(st.session_state.alt_val), format="%.1f", key="alt_field")
 st.session_state.alt_val = alt_input
 
 with st.sidebar.expander("📡 Usar GPS do Aparelho (Opcional)"):
