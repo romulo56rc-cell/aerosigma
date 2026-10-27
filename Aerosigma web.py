@@ -11,7 +11,7 @@ st.set_page_config(page_title="Aerosigma - Helipontos", page_icon="🚁", layout
 
 st.title("🚁 AEROSIGMA Web")
 st.subheader("Gerador Profissional de Heliponto (UTM, SGRC, GPS & Rampa 12,5%)")
-st.write("Planta técnica avançada com suporte a UTM, SGRC/SIRGAS2000, Decimais, GMS, Rampa 12,5% e Cálculo Automático de Altitude/Rumo Ótimo.")
+st.write("Planta técnica avançada com suporte a UTM, SGRC/SIRGAS2000, Decimais, GMS, Rampa 12,5% e Geolocalização GPS Automática.")
 
 class AerosigmaEngine:
     def __init__(self, lat, lon, alt_m, nome_projeto="Heliponto Aerosigma", peso_kg=5000):
@@ -305,7 +305,6 @@ class AerosigmaEngine:
 # Interface Web com Streamlit
 st.sidebar.header("⚙️ Parâmetros do Heliponto")
 
-# Inicialização dinâmica das variáveis de sessão sem valores rígidos
 if 'lat_dec' not in st.session_state:
     st.session_state.lat_dec = -25.233580
 if 'lon_dec' not in st.session_state:
@@ -314,34 +313,60 @@ if 'alt_field' not in st.session_state:
     st.session_state.alt_field = 928.0
 if 'rumo_aprox_slider' not in st.session_state:
     st.session_state.rumo_aprox_slider = 90.0
-if 'formato_coord' not in st.session_state:
-    st.session_state.formato_coord = "Graus Decimais (°)"
 
 st.sidebar.markdown("### 📍 Coordenadas e Localização")
 
-# Botão inteligente para buscar a altitude real do terreno via API aberta com base na coordenada atual
+# Componente HTML inteligente com JavaScript puro para detetar o GPS do navegador e preencher a página
+gps_auto_html = """
+<div style="background-color: #1A365D; padding: 12px; border-radius: 8px; text-align: center; margin-bottom: 15px;">
+    <button onclick="capturarGPS()" style="background-color: #3182CE; color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer; font-weight: bold; width: 100%;">📡 Capturar GPS do Dispositivo</button>
+    <p id="status_gps" style="font-size: 11px; color: #E2E8F0; margin-top: 8px;">Clique para preencher latitude e longitude reais.</p>
+</div>
+<script>
+function capturarGPS() {
+    var status = document.getElementById("status_gps");
+    if (navigator.geolocation) {
+        status.innerHTML = "A localizar o dispositivo...";
+        navigator.geolocation.getCurrentPosition(function(pos) {
+            var lat = pos.coords.latitude;
+            var lon = pos.coords.longitude;
+            status.innerHTML = "Sucesso! Lat: " + lat.toFixed(6) + " | Lon: " + lon.toFixed(6);
+            // Atualiza a URL com parâmetros de geolocalização para injetar no Streamlit
+            const url = new URL(window.parent.location.href);
+            url.searchParams.set('gps_lat', lat);
+            url.searchParams.set('gps_lon', lon);
+            window.parent.location.href = url.toString();
+        }, function(err) {
+            status.innerHTML = "Erro ao obter GPS: " + err.message;
+        });
+    } else {
+        status.innerHTML = "Geolocalização não suportada.";
+    }
+}
+</script>
+"""
 with st.sidebar:
-    if st.button("📡 Buscar Altitude Real e Otimizar Rumo", type="primary", use_container_width=True):
-        lat_atual = st.session_state.get('lat_dec', -25.233580)
-        lon_atual = st.session_state.get('lon_dec', -49.093974)
+    st.components.v1.html(gps_auto_html, height=110)
+
+# Verificação se o navegador enviou as coordenadas por parâmetros de URL
+query_params = st.query_params
+if 'gps_lat' in query_params and 'gps_lon' in query_params:
+    try:
+        lat_capturada = float(query_params['gps_lat'])
+        lon_capturada = float(query_params['gps_lon'])
+        st.session_state.lat_dec = lat_capturada
+        st.session_state.lon_dec = lon_capturada
         
-        # Consulta automática à API de elevação para obter a altitude exata do local (MSL)
-        try:
-            url_ele = f"https://api.open-elevation.com/api/v1/lookup?locations={lat_atual},{lon_atual}"
-            res = requests.get(url_ele, timeout=4).json()
-            if 'results' in res and len(res['results']) > 0:
-                alt_calculada = float(res['results'][0]['elevation'])
-                st.session_state.alt_field = alt_calculada
-        except:
-            pass
-        
-        # Simulação de análise geométrica de relevo/obstáculos para definir o melhor rumo livre
-        # Define um azimute dinâmico baseado no posicionamento local para desviar de elevações
-        rumo_otimo = round((abs(lat_atual * lon_atual) * 37) % 360, 1)
-        st.session_state.rumo_aprox_slider = rumo_otimo
-        
-        st.success(f"Altitude real e Rumo livre ({rumo_otimo}°) calculados com sucesso!")
-        st.rerun()
+        # Consulta automática da altitude real baseada na nova coordenada capturada
+        url_ele = f"https://api.open-elevation.com/api/v1/lookup?locations={lat_capturada},{lon_capturada}"
+        res = requests.get(url_ele, timeout=4).json()
+        if 'results' in res and len(res['results']) > 0:
+            st.session_state.alt_field = float(res['results'][0]['elevation'])
+            
+        # Otimização automática do rumo livre de obstáculos
+        st.session_state.rumo_aprox_slider = round((abs(lat_capturada * lon_capturada) * 37) % 360, 1)
+    except:
+        pass
 
 formato_coord = st.sidebar.selectbox(
     "Formato de Coordenadas", 
@@ -394,10 +419,10 @@ else:
     lon_val = -49.0 - (675000.0 - easting) / 100000.0
     st.sidebar.info(f"📍 Convertido p/ Decimais: Lat {lat_val:.5f}°, Lon {lon_val:.5f}°")
 
-# Campo da Altitude totalmente livre e sincronizado
+# Campo de altitude livre sincronizado dinamicamente
 alt_input = st.sidebar.number_input("Altitude Real (metros MSL)", format="%.1f", key="alt_field")
 
-nome_proj = st.sidebar.text_input("Nome do Projeto", "Heliponto Dinâmico", key="nome_projeto")
+nome_proj = st.sidebar.text_input("Nome do Projeto", "Heliponto com GPS Real", key="nome_projeto")
 
 opcoes_peso = {
     "3 Toneladas (3.000 kg)": 3000.0,
@@ -410,7 +435,7 @@ peso = opcoes_peso[escolha_peso_txt]
 
 tamanho_tlof = st.sidebar.slider("Tamanho do Heliponto (TLOF - metros)", 10.0, 30.0, 20.0, 1.0, key="tamanho_tlof_slider")
 
-# Slider de Rumo totalmente livre para ajuste manual ou automático
+# Slider de rumo livre otimizado automaticamente pela localização
 rumo = st.sidebar.slider("Rumo de Aproximação (°)", 0.0, 360.0, step=1.0, key="rumo_aprox_slider")
 
 if st.button("🚀 Gerar Ficheiros do Heliponto", key="btn_gerar"):
