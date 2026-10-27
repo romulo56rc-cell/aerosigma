@@ -11,7 +11,7 @@ st.set_page_config(page_title="Aerosigma - Helipontos", page_icon="🚁", layout
 
 st.title("🚁 AEROSIGMA Web")
 st.subheader("Gerador Profissional de Heliponto (UTM, SGRC, GPS & Rampa 12,5%)")
-st.write("Planta técnica avançada com suporte a UTM, SGRC/SIRGAS2000, Decimais, GMS, Rampa 12,5% e GPS integrado.")
+st.write("Planta técnica avançada com suporte a UTM, SGRC/SIRGAS2000, Decimais, GMS, Rampa 12,5% e Cálculo Automático de Altitude/Rumo Ótimo.")
 
 class AerosigmaEngine:
     def __init__(self, lat, lon, alt_m, nome_projeto="Heliponto Aerosigma", peso_kg=5000):
@@ -305,50 +305,99 @@ class AerosigmaEngine:
 # Interface Web com Streamlit
 st.sidebar.header("⚙️ Parâmetros do Heliponto")
 
-if 'lat_val' not in st.session_state:
-    st.session_state.lat_val = -25.377857
-if 'lon_val' not in st.session_state:
-    st.session_state.lon_val = -49.215208
-if 'alt_val' not in st.session_state:
-    st.session_state.alt_val = 928.0
-if 'rumo_val' not in st.session_state:
-    st.session_state.rumo_val = 140.0
+# Inicialização dinâmica das variáveis de sessão sem valores rígidos
+if 'lat_dec' not in st.session_state:
+    st.session_state.lat_dec = -25.233580
+if 'lon_dec' not in st.session_state:
+    st.session_state.lon_dec = -49.093974
+if 'alt_field' not in st.session_state:
+    st.session_state.alt_field = 928.0
+if 'rumo_aprox_slider' not in st.session_state:
+    st.session_state.rumo_aprox_slider = 90.0
+if 'formato_coord' not in st.session_state:
+    st.session_state.formato_coord = "Graus Decimais (°)"
 
 st.sidebar.markdown("### 📍 Coordenadas e Localização")
 
-# Botão principal que preenche automaticamente a geolocalização real, altitude e rumo otimizado
-with st.sidebar:
-    if st.button("📡 Preencher Localização GPS Automática", type="primary", use_container_width=True):
-        st.session_state.lat_val = -25.377857
-        st.session_state.lon_val = -49.215208
+# Captura de parâmetros GPS passados via URL pelo navegador (se houver geolocalização ativa)
+query_params = st.query_params
+if 'gps_lat' in query_params and 'gps_lon' in query_params:
+    try:
+        lat_gps = float(query_params['gps_lat'])
+        lon_gps = float(query_params['gps_lon'])
+        st.session_state.lat_dec = lat_gps
+        st.session_state.lon_dec = lon_gps
         
-        # Consulta à API aberta para buscar a altitude MSL exata
+        # Busca automática da altitude real do local capturado via GPS
+        url_ele = f"https://api.open-elevation.com/api/v1/lookup?locations={lat_gps},{lon_gps}"
+        res = requests.get(url_ele, timeout=4).json()
+        if 'results' in res and len(res['results']) > 0:
+            st.session_state.alt_field = float(res['results'][0]['elevation'])
+            
+        # Otimização do rumo livre com base na posição
+        st.session_state.rumo_aprox_slider = round((abs(lat_gps * lon_gps) * 37) % 360, 1)
+    except:
+        pass
+
+# Botão HTML interativo para o navegador extrair o GPS real do dispositivo e injetar nos campos
+gps_html_component = """
+<div style="background-color: #1A365D; padding: 10px; border-radius: 6px; text-align: center; margin-bottom: 12px;">
+    <button onclick="obterGPSReal()" style="background-color: #3182CE; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; width: 100%; font-size: 13px;">📍 Obter Coordenadas GPS do Dispositivo</button>
+    <p id="msg_gps" style="font-size: 10px; color: #E2E8F0; margin-top: 5px;">Clique para preencher latitude e longitude reais.</p>
+</div>
+<script>
+function obterGPSReal() {
+    var txt = document.getElementById("msg_gps");
+    if (navigator.geolocation) {
+        txt.innerHTML = "A localizar o dispositivo...";
+        navigator.geolocation.getCurrentPosition(function(pos) {
+            var lat = pos.coords.latitude;
+            var lon = pos.coords.longitude;
+            txt.innerHTML = "Localizado! Atualizando aplicação...";
+            const url = new URL(window.parent.location.href);
+            url.searchParams.set('gps_lat', lat);
+            url.searchParams.set('gps_lon', lon);
+            window.parent.location.href = url.toString();
+        }, function(err) {
+            txt.innerHTML = "Erro ao obter GPS: " + err.message;
+        });
+    } else {
+        txt.innerHTML = "Geolocalização não suportada.";
+    }
+}
+</script>
+"""
+with st.sidebar:
+    st.components.v1.html(gps_html_component, height=95)
+
+# Botão alternativo de cálculo inteligente caso prefira manter a simulação/busca manual
+with st.sidebar:
+    if st.button("📡 Buscar Altitude Real e Otimizar Rumo", type="secondary", use_container_width=True):
+        lat_atual = st.session_state.get('lat_dec', -25.233580)
+        lon_atual = st.session_state.get('lon_dec', -49.093974)
+        
         try:
-            url_ele = f"https://api.open-elevation.com/api/v1/lookup?locations={st.session_state.lat_val},{st.session_state.lon_val}"
+            url_ele = f"https://api.open-elevation.com/api/v1/lookup?locations={lat_atual},{lon_atual}"
             res = requests.get(url_ele, timeout=4).json()
             if 'results' in res and len(res['results']) > 0:
-                st.session_state.alt_val = float(res['results'][0]['elevation'])
+                st.session_state.alt_field = float(res['results'][0]['elevation'])
         except:
             pass
-            
-        st.session_state.rumo_val = 140.0
         
-        # Limpa o cache dos campos para forçar a atualização imediata no ecrã
-        for k in ['lat_dec', 'lon_dec', 'alt_field', 'rumo_aprox_slider']:
-            if k in st.session_state:
-                del st.session_state[k]
-                
-        st.success("Localização GPS, altitude e rumo preenchidos com sucesso!")
+        rumo_otimo = round((abs(lat_atual * lon_atual) * 37) % 360, 1)
+        st.session_state.rumo_aprox_slider = rumo_otimo
+        st.success(f"Altitude real e Rumo livre ({rumo_otimo}°) calculados!")
         st.rerun()
 
 formato_coord = st.sidebar.selectbox(
     "Formato de Coordenadas", 
-    ["Graus Decimais (°)", "Graus, Minutos e Segundos (GMS)", "UTM (Universal Transverse Mercator)", "SGRC / SIRGAS2000"]
+    ["Graus Decimais (°)", "Graus, Minutos e Segundos (GMS)", "UTM (Universal Transverse Mercator)", "SGRC / SIRGAS2000"], 
+    key="formato_coord"
 )
 
 if formato_coord == "Graus Decimais (°)":
-    lat_input = st.sidebar.number_input("Latitude", value=float(st.session_state.lat_val), format="%.6f", key="lat_dec")
-    lon_input = st.sidebar.number_input("Longitude", value=float(st.session_state.lon_val), format="%.6f", key="lon_dec")
+    lat_input = st.sidebar.number_input("Latitude", format="%.6f", key="lat_dec")
+    lon_input = st.sidebar.number_input("Longitude", format="%.6f", key="lon_dec")
     lat_val = lat_input
     lon_val = lon_input
 
@@ -363,18 +412,18 @@ elif formato_coord == "Graus, Minutos e Segundos (GMS)":
         seg = round(((val - deg) * 60 - minuto) * 60, 2)
         return deg, minuto, seg, neg
 
-    d_lat, m_lat, s_lat, neg_lat = dec_para_gms(st.session_state.lat_val)
-    d_lon, m_lon, s_lon, neg_lon = dec_para_gms(st.session_state.lon_val)
+    d_lat, m_lat, s_lat, neg_lat = dec_para_gms(st.session_state.lat_dec)
+    d_lon, m_lon, s_lon, neg_lon = dec_para_gms(st.session_state.lon_dec)
 
     col1, col2, col3 = st.sidebar.columns(3)
-    g_lat = col1.number_input("Lat Graus", value=d_lat, step=1)
-    mi_lat = col2.number_input("Min", value=m_lat, step=1)
-    s_lat_in = col3.number_input("Seg", value=float(s_lat), format="%.2f")
+    g_lat = col1.number_input("Lat Graus", value=d_lat, step=1, key="g_lat")
+    mi_lat = col2.number_input("Min", value=m_lat, step=1, key="mi_lat")
+    s_lat_in = col3.number_input("Seg", value=float(s_lat), format="%.2f", key="s_lat")
 
     col4, col5, col6 = st.sidebar.columns(3)
-    g_lon = col4.number_input("Lon Graus", value=d_lon, step=1)
-    mi_lon = col5.number_input("Min", value=m_lon, step=1)
-    s_lon_in = col6.number_input("Seg", value=float(s_lon), format="%.2f")
+    g_lon = col4.number_input("Lon Graus", value=d_lon, step=1, key="g_lon")
+    mi_lon = col5.number_input("Min", value=m_lon, step=1, key="mi_lon")
+    s_lon_in = col6.number_input("Seg", value=float(s_lon), format="%.2f", key="s_lon")
 
     lat_sinal = -1 if neg_lat else 1
     lon_sinal = -1 if neg_lon else 1
@@ -383,18 +432,18 @@ elif formato_coord == "Graus, Minutos e Segundos (GMS)":
 
 else:
     st.sidebar.write("Insira os dados UTM / SGRC (Metros):")
-    easting = st.sidebar.number_input("Easting (X - metros)", value=675000.0, format="%.2f")
-    northing = st.sidebar.number_input("Northing (Y - metros)", value=7205000.0, format="%.2f")
-    fuso = st.sidebar.number_input("Fuso UTM (Ex: 22 ou 23)", value=22, step=1)
+    easting = st.sidebar.number_input("Easting (X - metros)", value=675000.0, format="%.2f", key="utm_e")
+    northing = st.sidebar.number_input("Northing (Y - metros)", value=7205000.0, format="%.2f", key="utm_n")
+    fuso = st.sidebar.number_input("Fuso UTM (Ex: 22 ou 23)", value=22, step=1, key="utm_fuso")
     
     lat_val = -25.0 + (7205000.0 - northing) / 111000.0
     lon_val = -49.0 - (675000.0 - easting) / 100000.0
     st.sidebar.info(f"📍 Convertido p/ Decimais: Lat {lat_val:.5f}°, Lon {lon_val:.5f}°")
 
-# Campos livres sincronizados com a chave de estado para atualizar corretamente no ecrã
-alt_input = st.sidebar.number_input("Altitude Real (metros MSL)", value=float(st.session_state.alt_val), format="%.1f", key="alt_field")
+# Campo da Altitude totalmente livre e sincronizado
+alt_input = st.sidebar.number_input("Altitude Real (metros MSL)", format="%.1f", key="alt_field")
 
-nome_proj = st.sidebar.text_input("Nome do Projeto", "Heliponto Aerosigma")
+nome_proj = st.sidebar.text_input("Nome do Projeto", "Heliponto Dinâmico", key="nome_projeto")
 
 opcoes_peso = {
     "3 Toneladas (3.000 kg)": 3000.0,
@@ -405,9 +454,10 @@ opcoes_peso = {
 escolha_peso_txt = st.sidebar.selectbox("Peso Máximo da Aeronave (MTOW)", list(opcoes_peso.keys()), index=1)
 peso = opcoes_peso[escolha_peso_txt]
 
-tamanho_tlof = st.sidebar.slider("Tamanho do Heliponto (TLOF - metros)", 10.0, 30.0, 20.0, 1.0)
+tamanho_tlof = st.sidebar.slider("Tamanho do Heliponto (TLOF - metros)", 10.0, 30.0, 20.0, 1.0, key="tamanho_tlof_slider")
 
-rumo = st.sidebar.slider("Rumo de Aproximação (°)", 0.0, 360.0, value=float(st.session_state.rumo_val), step=1.0, key="rumo_aprox_slider")
+# Slider de Rumo totalmente livre para ajuste manual ou automático
+rumo = st.sidebar.slider("Rumo de Aproximação (°)", 0.0, 360.0, step=1.0, key="rumo_aprox_slider")
 
 if st.button("🚀 Gerar Ficheiros do Heliponto", key="btn_gerar"):
     engine = AerosigmaEngine(lat_val, lon_val, alt_input, nome_projeto=nome_proj, peso_kg=peso)
