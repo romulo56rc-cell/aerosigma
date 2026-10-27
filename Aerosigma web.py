@@ -305,6 +305,7 @@ class AerosigmaEngine:
 # Interface Web com Streamlit
 st.sidebar.header("⚙️ Parâmetros do Heliponto")
 
+# Inicialização segura do session_state
 if 'lat_val' not in st.session_state:
     st.session_state.lat_val = -25.233580
 if 'lon_val' not in st.session_state:
@@ -318,7 +319,7 @@ if 'formato_coord' not in st.session_state:
 
 st.sidebar.markdown("### 📍 Coordenadas e Localização")
 
-# Botão principal integrado que aplica Latitude, Longitude, Altitude e Rumo de forma síncrona
+# Botão principal de GPS que limpa as chaves dos widgets para forçar a atualização imediata
 with st.sidebar:
     if st.button("📡 Aplicar GPS e Rumo Ótimo (140°)", type="primary", use_container_width=True):
         st.session_state.lat_val = -25.377857
@@ -326,7 +327,11 @@ with st.sidebar:
         st.session_state.alt_val = 928.0
         st.session_state.rumo_val = 140.0
         st.session_state.formato_coord = "Graus Decimais (°)"
-        st.success("Coordenadas, altitude e rumo ótimo aplicados com sucesso!")
+        # Limpa chaves específicas para evitar conflito de cache do Streamlit
+        for key in ['lat_dec', 'lon_dec', 'alt_field', 'rumo_aprox_slider']:
+            if key in st.session_state:
+                del st.session_state[key]
+        st.success("GPS, altitude e rumo aplicados com sucesso!")
         st.rerun()
 
 formato_coord = st.sidebar.selectbox(
@@ -382,7 +387,7 @@ else:
     st.session_state.lon_val = lon_aprox
     st.sidebar.info(f"📍 Convertido p/ Decimais: Lat {lat_aprox:.5f}°, Lon {lon_aprox:.5f}°")
 
-# Campo de altitude sincronizado com st.session_state.alt_val
+# Campo altitude ligado diretamente ao session_state
 alt_input = st.sidebar.number_input("Altitude (metros MSL)", value=float(st.session_state.alt_val), format="%.1f", key="alt_field")
 st.session_state.alt_val = alt_input
 
@@ -399,7 +404,7 @@ peso = opcoes_peso[escolha_peso_txt]
 
 tamanho_tlof = st.sidebar.slider("Tamanho do Heliponto (TLOF - metros)", 10.0, 30.0, 20.0, 1.0, key="tamanho_tlof_slider")
 
-# Slider do Rumo sincronizado com st.session_state.rumo_val
+# Slider do rumo ligado diretamente ao session_state
 rumo = st.sidebar.slider("Rumo de Aproximação (°)", 0.0, 360.0, value=float(st.session_state.rumo_val), step=1.0, key="rumo_aprox_slider")
 st.session_state.rumo_val = rumo
 
