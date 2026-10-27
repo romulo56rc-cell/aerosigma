@@ -11,8 +11,8 @@ from streamlit_geolocation import streamlit_geolocation
 st.set_page_config(page_title="Aerosigma - Helipontos", page_icon="🚁", layout="centered")
 
 st.title("🚁 AEROSIGMA Web")
-st.subheader("Gerador Profissional de Heliponto (Coordenadas Decimais ou GMS)")
-st.write("Planta técnica com suporte a Coordenadas Decimais, Graus/Minutos/Segundos e GPS.")
+st.subheader("Gerador Profissional de Heliponto (Coordenadas e GPS)")
+st.write("Planta técnica sincronizada com suporte total a Decimais, GMS e GPS.")
 
 class AerosigmaEngine:
     def __init__(self, lat, lon, alt_m, nome_projeto="Heliponto Aerosigma", peso_kg=5000):
@@ -305,17 +305,37 @@ class AerosigmaEngine:
 # Interface Web com Streamlit
 st.sidebar.header("⚙️ Parâmetros do Heliponto")
 
-# Escolha do formato de coordenadas
-formato_coord = st.sidebar.selectbox("Formato de Coordenadas", ["Graus Decimais (°)", "Graus, Minutos e Segundos (GMS)"])
-
 if 'lat_val' not in st.session_state:
     st.session_state.lat_val = -25.233580
 if 'lon_val' not in st.session_state:
     st.session_state.lon_val = -49.093974
 if 'alt_val' not in st.session_state:
     st.session_state.alt_val = 928.0
+if 'formato_coord' not in st.session_state:
+    st.session_state.formato_coord = "Graus Decimais (°)"
 
 st.sidebar.markdown("### 📍 Coordenadas e Localização")
+
+# Secção GPS integrada no topo para garantir prioridade de captura
+with st.sidebar.expander("📡 Usar GPS do Aparelho (Opcional)", expanded=False):
+    st.write("Clique abaixo para capturar a posição atual do seu dispositivo:")
+    loc = streamlit_geolocation()
+    if loc and loc.get('latitude') and loc.get('longitude'):
+        if st.button("📌 Aplicar Posição do GPS"):
+            st.session_state.lat_val = float(loc['latitude'])
+            st.session_state.lon_val = float(loc['longitude'])
+            st.session_state.formato_coord = "Graus Decimais (°)" # Força o formato decimal para exibir direto
+            try:
+                url_elev = f"https://api.open-elevation.com/api/v1/lookup?locations={loc['latitude']},{loc['longitude']}"
+                res = requests.get(url_elev, timeout=3).json()
+                if 'results' in res and len(res['results']) > 0:
+                    st.session_state.alt_val = float(res['results'][0]['elevation'])
+            except:
+                pass
+            st.success("Coordenadas do GPS aplicadas com sucesso!")
+            st.rerun()
+
+formato_coord = st.sidebar.selectbox("Formato de Coordenadas", ["Graus Decimais (°)", "Graus, Minutos e Segundos (GMS)"], key="formato_coord")
 
 if formato_coord == "Graus Decimais (°)":
     lat_input = st.sidebar.number_input("Latitude", value=float(st.session_state.lat_val), format="%.6f", key="lat_dec")
@@ -325,7 +345,6 @@ if formato_coord == "Graus Decimais (°)":
 else:
     st.sidebar.write("Insira os componentes GMS:")
     
-    # Conversor auxiliar para valores iniciais aproximados
     def dec_para_gms(val):
         neg = val < 0
         val = abs(val)
@@ -340,14 +359,13 @@ else:
     col1, col2, col3 = st.sidebar.columns(3)
     g_lat = col1.number_input("Lat Graus", value=d_lat, step=1, key="g_lat")
     mi_lat = col2.number_input("Min", value=m_lat, step=1, key="mi_lat")
-    s_lat_in = col3.number_input("Seg", value=s_lat, format="%.2f", key="s_lat")
+    s_lat_in = col3.number_input("Seg", value=float(s_lat), format="%.2f", key="s_lat")
 
     col4, col5, col6 = st.sidebar.columns(3)
     g_lon = col4.number_input("Lon Graus", value=d_lon, step=1, key="g_lon")
     mi_lon = col5.number_input("Min", value=m_lon, step=1, key="mi_lon")
-    s_lon_in = col6.number_input("Seg", value=s_lon, format="%.2f", key="s_lon")
+    s_lon_in = col6.number_input("Seg", value=float(s_lon), format="%.2f", key="s_lon")
 
-    # Converter GMS para Decimal
     lat_sinal = -1 if neg_lat else 1
     lon_sinal = -1 if neg_lon else 1
     st.session_state.lat_val = lat_sinal * (abs(g_lat) + mi_lat/60.0 + s_lat_in/3600.0)
@@ -355,23 +373,6 @@ else:
 
 alt_input = st.sidebar.number_input("Altitude (metros MSL)", value=float(st.session_state.alt_val), format="%.1f", key="alt_field")
 st.session_state.alt_val = alt_input
-
-with st.sidebar.expander("📡 Usar GPS do Aparelho (Opcional)"):
-    st.write("Clique abaixo para capturar a posição atual do seu dispositivo:")
-    loc = streamlit_geolocation()
-    if loc and loc.get('latitude') and loc.get('longitude'):
-        if st.button("📌 Aplicar Posição do GPS"):
-            st.session_state.lat_val = float(loc['latitude'])
-            st.session_state.lon_val = float(loc['longitude'])
-            try:
-                url_elev = f"https://api.open-elevation.com/api/v1/lookup?locations={loc['latitude']},{loc['longitude']}"
-                res = requests.get(url_elev, timeout=3).json()
-                if 'results' in res and len(res['results']) > 0:
-                    st.session_state.alt_val = float(res['results'][0]['elevation'])
-            except:
-                pass
-            st.success("Coordenadas do GPS aplicadas com sucesso!")
-            st.rerun()
 
 nome_proj = st.sidebar.text_input("Nome do Projeto", "Heliponto 20m - 5t", key="nome_projeto")
 
