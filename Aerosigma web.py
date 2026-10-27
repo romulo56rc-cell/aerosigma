@@ -10,8 +10,8 @@ import numpy as np
 st.set_page_config(page_title="Aerosigma - Helipontos", page_icon="🚁", layout="centered")
 
 st.title("🚁 AEROSIGMA Web")
-st.subheader("Gerador Profissional de Heliponto (UTM, SGRC, Coordenadas & Rampa 12,5%)")
-st.write("Planta técnica avançada com suporte a UTM, SGRC/SIRGAS2000, Decimais, GMS e Rampa 12,5%.")
+st.subheader("Gerador Profissional de Heliponto (UTM, SGRC, GPS & Rampa 12,5%)")
+st.write("Planta técnica avançada com suporte a UTM, SGRC/SIRGAS2000, Decimais, GMS, Rampa 12,5% e GPS seguro.")
 
 class AerosigmaEngine:
     def __init__(self, lat, lon, alt_m, nome_projeto="Heliponto Aerosigma", peso_kg=5000):
@@ -317,6 +317,30 @@ if 'formato_coord' not in st.session_state:
     st.session_state.formato_coord = "Graus Decimais (°)"
 
 st.sidebar.markdown("### 📍 Coordenadas e Localização")
+
+# Botão de Geolocalização Integrado e Seguro via HTML/JS Nativo no Streamlit
+gps_html = """
+<div style="margin-bottom: 15px;">
+    <button onclick="getLocation()" style="background-color: #2B6CB0; color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer; font-weight: bold; width: 100%;">📡 Obter Posição Atual (GPS)</button>
+    <p id="gps_status" style="font-size: 11px; color: #4A5568; margin-top: 5px;"></p>
+</div>
+<script>
+function getLocation() {
+    var status = document.getElementById("gps_status");
+    if (navigator.geolocation) {
+        status.innerHTML = "A localizar...";
+        navigator.geolocation.getCurrentPosition(function(position) {
+            status.innerHTML = "Localização obtida! Copie os valores: Lat: " + position.coords.latitude.toFixed(6) + ", Lon: " + position.coords.longitude.toFixed(6);
+        }, function(error) {
+            status.innerHTML = "Erro ao obter GPS: " + error.message;
+        });
+    } else {
+        status.innerHTML = "Geolocalização não suportada neste navegador.";
+    }
+}
+</script>
+"""
+st.sidebar.components.v1.html(gps_html, height=80)
 
 formato_coord = st.sidebar.selectbox(
     "Formato de Coordenadas", 
