@@ -319,7 +319,7 @@ if 'formato_coord' not in st.session_state:
 
 st.sidebar.markdown("### 📍 Coordenadas e Localização")
 
-# Botão principal de GPS que limpa as chaves dos widgets para forçar a atualização imediata
+# Botão principal de GPS que define rigorosamente os valores na sessão e limpa a cache dos widgets
 with st.sidebar:
     if st.button("📡 Aplicar GPS e Rumo Ótimo (140°)", type="primary", use_container_width=True):
         st.session_state.lat_val = -25.377857
@@ -327,10 +327,12 @@ with st.sidebar:
         st.session_state.alt_val = 928.0
         st.session_state.rumo_val = 140.0
         st.session_state.formato_coord = "Graus Decimais (°)"
-        # Limpa chaves específicas para evitar conflito de cache do Streamlit
-        for key in ['lat_dec', 'lon_dec', 'alt_field', 'rumo_aprox_slider']:
-            if key in st.session_state:
-                del st.session_state[key]
+        
+        # Remove as chaves antigas do cache para forçar a atualização imediata na interface
+        for k in ['lat_dec', 'lon_dec', 'alt_field', 'rumo_aprox_slider']:
+            if k in st.session_state:
+                del st.session_state[k]
+        
         st.success("GPS, altitude e rumo aplicados com sucesso!")
         st.rerun()
 
@@ -387,7 +389,7 @@ else:
     st.session_state.lon_val = lon_aprox
     st.sidebar.info(f"📍 Convertido p/ Decimais: Lat {lat_aprox:.5f}°, Lon {lon_aprox:.5f}°")
 
-# Campo altitude ligado diretamente ao session_state
+# Campo da Altitude ligado rigorosamente ao session_state
 alt_input = st.sidebar.number_input("Altitude (metros MSL)", value=float(st.session_state.alt_val), format="%.1f", key="alt_field")
 st.session_state.alt_val = alt_input
 
@@ -404,7 +406,7 @@ peso = opcoes_peso[escolha_peso_txt]
 
 tamanho_tlof = st.sidebar.slider("Tamanho do Heliponto (TLOF - metros)", 10.0, 30.0, 20.0, 1.0, key="tamanho_tlof_slider")
 
-# Slider do rumo ligado diretamente ao session_state
+# Slider do Rumo ligado rigorosamente ao session_state
 rumo = st.sidebar.slider("Rumo de Aproximação (°)", 0.0, 360.0, value=float(st.session_state.rumo_val), step=1.0, key="rumo_aprox_slider")
 st.session_state.rumo_val = rumo
 
