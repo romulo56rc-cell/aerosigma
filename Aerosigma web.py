@@ -318,11 +318,11 @@ if 'formato_coord' not in st.session_state:
 
 st.sidebar.markdown("### 📍 Coordenadas e Localização")
 
-# Botão de Geolocalização Integrado e Seguro via HTML/JS Nativo no Streamlit
+# Componente GPS Nativo Seguro via st.components.v1.html
 gps_html = """
 <div style="margin-bottom: 15px;">
     <button onclick="getLocation()" style="background-color: #2B6CB0; color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer; font-weight: bold; width: 100%;">📡 Obter Posição Atual (GPS)</button>
-    <p id="gps_status" style="font-size: 11px; color: #4A5568; margin-top: 5px;"></p>
+    <p id="gps_status" style="font-size: 11px; color: #CBD5E0; margin-top: 5px;"></p>
 </div>
 <script>
 function getLocation() {
@@ -330,17 +330,17 @@ function getLocation() {
     if (navigator.geolocation) {
         status.innerHTML = "A localizar...";
         navigator.geolocation.getCurrentPosition(function(position) {
-            status.innerHTML = "Localização obtida! Copie os valores: Lat: " + position.coords.latitude.toFixed(6) + ", Lon: " + position.coords.longitude.toFixed(6);
+            status.innerHTML = "GPS OK! Lat: " + position.coords.latitude.toFixed(6) + " | Lon: " + position.coords.longitude.toFixed(6);
         }, function(error) {
-            status.innerHTML = "Erro ao obter GPS: " + error.message;
+            status.innerHTML = "Erro GPS: " + error.message;
         });
     } else {
-        status.innerHTML = "Geolocalização não suportada neste navegador.";
+        status.innerHTML = "Geolocalização não suportada.";
     }
 }
 </script>
 """
-st.sidebar.components.v1.html(gps_html, height=80)
+st.components.v1.html(gps_html, height=80)
 
 formato_coord = st.sidebar.selectbox(
     "Formato de Coordenadas", 
