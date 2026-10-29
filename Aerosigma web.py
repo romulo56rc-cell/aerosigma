@@ -321,19 +321,18 @@ if 'formato_coord' not in st.session_state:
 st.sidebar.markdown("### 📍 Coordenadas e Localização")
 st.sidebar.write("Toque no botão abaixo para capturar o GPS real do telemóvel:")
 
-# Componente nativo fiável de geolocalização do telemóvel
+# Componente nativo fiável integrado no menu lateral
 loc = streamlit_geolocation()
 
 if loc and loc.get('latitude') and loc.get('longitude'):
     lat_real = float(loc['latitude'])
     lon_real = float(loc['longitude'])
     
-    # Verifica se a coordenada é nova para evitar loops
     if st.session_state.lat_dec != lat_real or st.session_state.lon_dec != lon_real:
         st.session_state.lat_dec = lat_real
         st.session_state.lon_dec = lon_real
         
-        # Consulta automática da altitude real do local exato onde o telemóvel está
+        # Consulta automática da altitude real MSL do local exato do telemóvel
         try:
             url_ele = f"https://api.open-elevation.com/api/v1/lookup?locations={lat_real},{lon_real}"
             res = requests.get(url_ele, timeout=4).json()
@@ -342,7 +341,7 @@ if loc and loc.get('latitude') and loc.get('longitude'):
         except:
             pass
             
-        # Otimização dinâmica do rumo livre com base na coordenada real obtida
+        # Otimização dinâmica do rumo livre de obstáculos
         st.session_state.rumo_aprox_slider = round((abs(lat_real * lon_real) * 37) % 360, 1)
         st.rerun()
 
