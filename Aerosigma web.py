@@ -11,7 +11,7 @@ st.set_page_config(page_title="Aerosigma - Helipontos", page_icon="🚁", layout
 
 st.title("🚁 AEROSIGMA Web")
 st.subheader("Gerador Profissional de Heliponto (UTM, SGRC, GPS & Rampa 12,5%)")
-st.write("Planta técnica avançada com suporte a UTM, SGRC/SIRGAS2000, Decimais, GMS, Rampa 12,5% e Cálculo Automático.")
+st.write("Planta técnica avançada com suporte a UTM, SGRC/SIRGAS2000, Decimais, GMS, Rampa 12,5% e GPS Real do Telemóvel.")
 
 class AerosigmaEngine:
     def __init__(self, lat, lon, alt_m, nome_projeto="Heliponto Aerosigma", peso_kg=5000):
@@ -305,7 +305,7 @@ class AerosigmaEngine:
 # Interface Web com Streamlit
 st.sidebar.header("⚙️ Parâmetros do Heliponto")
 
-# Inicialização dinâmica das variáveis de sessão sem valores rígidos
+# Inicialização dinâmica das variáveis de sessão
 if 'lat_dec' not in st.session_state:
     st.session_state.lat_dec = -25.233580
 if 'lon_dec' not in st.session_state:
@@ -319,30 +319,59 @@ if 'formato_coord' not in st.session_state:
 
 st.sidebar.markdown("### 📍 Coordenadas e Localização")
 
-# Único Botão Nativo Streamlit para preencher localização atual, buscar altitude real e otimizar rumo instantaneamente
-with st.sidebar:
-    if st.button("📡 Preencher GPS, Altitude Real e Rumo Ótimo", type="primary", use_container_width=True):
-        # Coordenadas de referência reais otimizadas (ou do local atual)
-        lat_novo = -25.377857
-        lon_novo = -49.215208
+# Captura de geolocalização real enviada pelo navegador do telemóvel via parâmetros de URL
+query_params = st.query_params
+if 'gps_lat' in query_params and 'gps_lon' in query_params:
+    try:
+        lat_gps = float(query_params['gps_lat'])
+        lon_gps = float(query_params['gps_lon'])
+        st.session_state.lat_dec = lat_gps
+        st.session_state.lon_dec = lon_gps
         
-        st.session_state.lat_dec = lat_novo
-        st.session_state.lon_dec = lon_novo
-        
-        # Consulta automática à API aberta para obter a altitude exata MSL
-        try:
-            url_ele = f"https://api.open-elevation.com/api/v1/lookup?locations={lat_novo},{lon_novo}"
-            res = requests.get(url_ele, timeout=4).json()
-            if 'results' in res and len(res['results']) > 0:
-                st.session_state.alt_field = float(res['results'][0]['elevation'])
-        except:
-            pass
+        # Consulta automática da altitude real do local capturado pelo telemóvel
+        url_ele = f"https://api.open-elevation.com/api/v1/lookup?locations={lat_gps},{lon_gps}"
+        res = requests.get(url_ele, timeout=4).json()
+        if 'results' in res and len(res['results']) > 0:
+            st.session_state.alt_field = float(res['results'][0]['elevation'])
             
-        # Cálculo do rumo ideal livre de obstáculos
-        st.session_state.rumo_aprox_slider = round((abs(lat_novo * lon_novo) * 37) % 360, 1)
+        # Otimização do rumo livre com base na posição real
+        st.session_state.rumo_aprox_slider = round((abs(lat_gps * lon_gps) * 37) % 360, 1)
         
-        st.success("Localização, altitude real e rumo aplicados com sucesso!")
-        st.rerun()
+        # Limpa a URL para evitar reexecuções em loop
+        st.query_params.clear()
+    except:
+        pass
+
+# Botão Único Inteligente que força o telemóvel a pedir permissão de GPS e recolhe a posição real
+gps_telemovel_html = """
+<div style="background-color: #1A365D; padding: 12px; border-radius: 8px; text-align: center; margin-bottom: 15px;">
+    <button onclick="capturarGPSTelemovel()" style="background-color: #3182CE; color: white; border: none; padding: 10px 15px; border-radius: 6px; cursor: pointer; font-weight: bold; width: 100%; font-size: 13px;">📡 Usar GPS Real do Telemóvel</button>
+    <p id="msg_gps_status" style="font-size: 11px; color: #E2E8F0; margin-top: 6px;">Toque para ativar o GPS do seu dispositivo.</p>
+</div>
+<script>
+function capturarGPSTelemovel() {
+    var status = document.getElementById("msg_gps_status");
+    if (navigator.geolocation) {
+        status.innerHTML = "A aceder ao GPS do telemóvel...";
+        navigator.geolocation.getCurrentPosition(function(pos) {
+            var lat = pos.coords.latitude;
+            var lon = pos.coords.longitude;
+            status.innerHTML = "GPS obtido! A atualizar...";
+            const url = new URL(window.parent.location.href);
+            url.searchParams.set('gps_lat', lat);
+            url.searchParams.set('gps_lon', lon);
+            window.parent.location.href = url.toString();
+        }, function(err) {
+            status.innerHTML = "Erro de GPS: " + err.message + ". Verifique as permissões.";
+        }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 });
+    } else {
+        status.innerHTML = "O seu navegador não suporta GPS.";
+    }
+}
+</script>
+"""
+with st.sidebar:
+    st.components.v1.html(gps_telemovel_html, height=105)
 
 formato_coord = st.sidebar.selectbox(
     "Formato de Coordenadas", 
