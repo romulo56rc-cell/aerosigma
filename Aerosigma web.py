@@ -98,8 +98,8 @@ class AerosigmaEngine:
 
             e1_lat, e1_lon = self.deslocar_ponto(c1_lat, c1_lon, largura1, azimute_rampa_deg - 90)
             d1_lat, d1_lon = self.deslocar_ponto(c1_lat, c1_lon, largura1, azimute_rampa_deg + 90)
-            e2_lat, e2_lon = self.deslocar_ponto(c1_lat, c1_lon, largura2, azimute_rampa_deg - 90)
-            d2_lat, d2_lon = self.deslocar_ponto(c1_lat, c1_lon, largura2, azimute_rampa_deg + 90)
+            e2_lat, e2_lon = self.deslocar_ponto(c2_lat, c2_lon, largura2, azimute_rampa_deg - 90)
+            d2_lat, d2_lon = self.deslocar_ponto(c2_lat, c2_lon, largura2, azimute_rampa_deg + 90)
 
             quad_3d = [
                 (e1_lat, e1_lon, alt1),
@@ -318,38 +318,38 @@ if 'rumo_aprox_slider' not in st.session_state:
 if 'formato_coord' not in st.session_state:
     st.session_state.formato_coord = "Graus Decimais (°)"
 
-st.sidebar.markdown("### 📍 Coordenadas e Localização")
-st.sidebar.write("Toque no botão abaixo para capturar o GPS real do telemóvel:")
+# Tudo inserido rigorosamente dentro da barra lateral (st.sidebar)
+with st.sidebar:
+    st.markdown("### 📍 Coordenadas e Localização")
+    st.write("Toque no botão abaixo para capturar o GPS real do telemóvel:")
 
-# Componente nativo fiável integrado no menu lateral
-loc = streamlit_geolocation()
+    # Componente de geolocalização renderizado estritamente no menu lateral
+    loc = streamlit_geolocation()
 
-if loc and loc.get('latitude') and loc.get('longitude'):
-    lat_real = float(loc['latitude'])
-    lon_real = float(loc['longitude'])
-    
-    if st.session_state.lat_dec != lat_real or st.session_state.lon_dec != lon_real:
-        st.session_state.lat_dec = lat_real
-        st.session_state.lon_dec = lon_real
+    if loc and loc.get('latitude') and loc.get('longitude'):
+        lat_real = float(loc['latitude'])
+        lon_real = float(loc['longitude'])
         
-        # Consulta automática da altitude real MSL do local exato do telemóvel
-        try:
-            url_ele = f"https://api.open-elevation.com/api/v1/lookup?locations={lat_real},{lon_real}"
-            res = requests.get(url_ele, timeout=4).json()
-            if 'results' in res and len(res['results']) > 0:
-                st.session_state.alt_field = float(res['results'][0]['elevation'])
-        except:
-            pass
+        if st.session_state.lat_dec != lat_real or st.session_state.lon_dec != lon_real:
+            st.session_state.lat_dec = lat_real
+            st.session_state.lon_dec = lon_real
             
-        # Otimização dinâmica do rumo livre de obstáculos
-        st.session_state.rumo_aprox_slider = round((abs(lat_real * lon_real) * 37) % 360, 1)
-        st.rerun()
+            try:
+                url_ele = f"https://api.open-elevation.com/api/v1/lookup?locations={lat_real},{lon_real}"
+                res = requests.get(url_ele, timeout=4).json()
+                if 'results' in res and len(res['results']) > 0:
+                    st.session_state.alt_field = float(res['results'][0]['elevation'])
+            except:
+                pass
+                
+            st.session_state.rumo_aprox_slider = round((abs(lat_real * lon_real) * 37) % 360, 1)
+            st.rerun()
 
-formato_coord = st.sidebar.selectbox(
-    "Formato de Coordenadas", 
-    ["Graus Decimais (°)", "Graus, Minutos e Segundos (GMS)", "UTM (Universal Transverse Mercator)", "SGRC / SIRGAS2000"], 
-    key="formato_coord"
-)
+    formato_coord = st.selectbox(
+        "Formato de Coordenadas", 
+        ["Graus Decimais (°)", "Graus, Minutos e Segundos (GMS)", "UTM (Universal Transverse Mercator)", "SGRC / SIRGAS2000"], 
+        key="formato_coord"
+    )
 
 if formato_coord == "Graus Decimais (°)":
     lat_input = st.sidebar.number_input("Latitude", format="%.6f", key="lat_dec")
